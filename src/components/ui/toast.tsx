@@ -60,3 +60,4 @@ export function ToastItem({ toast, onDismiss }: ToastItemProps) {
     </div>
   );
 }
+

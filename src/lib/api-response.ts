@@ -77,3 +77,4 @@ export function handleApiError(error: unknown): NextResponse<ApiResponse<never>>
 
   return apiError("An unexpected error occurred", 500, "UNKNOWN_ERROR");
 }
+

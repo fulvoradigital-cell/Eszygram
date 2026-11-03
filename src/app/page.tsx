@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
 import {
   Sparkles,
   Zap,
@@ -64,29 +66,16 @@ export default function HomePage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge variant="accent" className="hidden sm:inline-flex">
-              🇮🇳 Tailored for India
-            </Badge>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() =>
-                toast({
-                  title: "Design System Initialized",
-                  description: "All UI components are responsive, accessible & ready.",
-                  variant: "success",
-                })
-              }
-            >
-              Test Toast
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => setIsModalOpen(true)}
-            >
-              Open Modal
-            </Button>
+            <Link href="/auth/login">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
+            <Link href="/auth/signup">
+              <Button variant="primary" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -113,21 +102,16 @@ export default function HomePage() {
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Button
-              size="lg"
-              variant="primary"
-              className="w-full sm:w-auto"
-              rightIcon={<ArrowRight className="h-4 w-4" />}
-              onClick={() =>
-                toast({
-                  title: "Platform Setup Complete",
-                  description: "Next.js 14 App Router, NextAuth, Mongoose, & Zod ready.",
-                  variant: "info",
-                })
-              }
-            >
-              Explore Architecture
-            </Button>
+            <Link href="/auth/signup" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="primary"
+                className="w-full sm:w-auto"
+                rightIcon={<ArrowRight className="h-4 w-4" />}
+              >
+                Claim Your Creator Store
+              </Button>
+            </Link>
             <Button
               size="lg"
               variant="secondary"
@@ -415,3 +399,4 @@ export default function HomePage() {
     </div>
   );
 }
+

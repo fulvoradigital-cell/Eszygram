@@ -1,29 +1,18 @@
 import mongoose, { Document, Model, Schema } from "mongoose";
-import { UserRole } from "@/types/auth";
+
+export type UserRole = "creator" | "admin";
+export type UserPlan = "free" | "starter" | "pro";
 
 export interface IUser extends Document {
+  _id: mongoose.Types.ObjectId;
   name: string;
   email: string;
-  password?: string;
+  passwordHash?: string;
   role: UserRole;
-  username: string;
-  avatarUrl?: string;
-  bio?: string;
-  phone?: string;
-  authProvider: "credentials" | "google";
-  socialLinks?: {
-    instagram?: string;
-    youtube?: string;
-    twitter?: string;
-    linkedin?: string;
-  };
-  payoutDetails?: {
-    upiId?: string;
-    accountHolderName?: string;
-    accountNumber?: string;
-    ifscCode?: string;
-  };
-  isVerified: boolean;
+  plan: UserPlan;
+  onboardingCompleted: boolean;
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -44,57 +33,33 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       index: true,
     },
-    password: {
+    passwordHash: {
       type: String,
       required: false, // Optional for OAuth accounts
-      select: false, // Omit from default queries for security
+      select: false, // Always omit from queries unless explicitly selected
     },
     role: {
       type: String,
-      enum: ["creator", "admin", "customer"],
+      enum: ["creator", "admin"],
       default: "creator",
     },
-    username: {
+    plan: {
       type: String,
-      unique: true,
-      sparse: true,
-      lowercase: true,
-      trim: true,
-      index: true,
+      enum: ["free", "starter", "pro"],
+      default: "free",
     },
-    avatarUrl: {
-      type: String,
-      default: "",
-    },
-    bio: {
-      type: String,
-      default: "",
-      maxlength: [500, "Bio cannot exceed 500 characters"],
-    },
-    phone: {
-      type: String,
-      default: "",
-    },
-    authProvider: {
-      type: String,
-      enum: ["credentials", "google"],
-      default: "credentials",
-    },
-    socialLinks: {
-      instagram: { type: String, default: "" },
-      youtube: { type: String, default: "" },
-      twitter: { type: String, default: "" },
-      linkedin: { type: String, default: "" },
-    },
-    payoutDetails: {
-      upiId: { type: String, default: "" },
-      accountHolderName: { type: String, default: "" },
-      accountNumber: { type: String, default: "" },
-      ifscCode: { type: String, default: "" },
-    },
-    isVerified: {
+    onboardingCompleted: {
       type: Boolean,
       default: false,
+      index: true,
+    },
+    resetPasswordToken: {
+      type: String,
+      select: false,
+    },
+    resetPasswordExpires: {
+      type: Date,
+      select: false,
     },
   },
   {

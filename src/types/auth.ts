@@ -1,12 +1,13 @@
 import { DefaultSession } from "next-auth";
-
-export type UserRole = "creator" | "admin" | "customer";
+import { UserRole, UserPlan } from "@/models/User";
 
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
       role: UserRole;
+      plan: UserPlan;
+      onboardingCompleted: boolean;
       username?: string;
     } & DefaultSession["user"];
   }
@@ -14,6 +15,8 @@ declare module "next-auth" {
   interface User {
     id: string;
     role: UserRole;
+    plan: UserPlan;
+    onboardingCompleted: boolean;
     username?: string;
   }
 }
@@ -22,6 +25,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    plan: UserPlan;
+    onboardingCompleted: boolean;
     username?: string;
   }
 }

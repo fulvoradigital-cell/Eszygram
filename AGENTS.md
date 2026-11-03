@@ -145,3 +145,4 @@ Use the helper functions provided in `src/lib/api-response.ts`:
 - Run linting: `npm run lint`
 - Build for production: `npm run build`
 - Always verify typecheck passes with `npx tsc --noEmit` before considering work done.
+

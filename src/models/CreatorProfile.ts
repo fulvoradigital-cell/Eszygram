@@ -8,15 +8,34 @@ export interface ISocialLinks {
   website?: string;
 }
 
+export type ThemeButtonStyle =
+  | "rounded"
+  | "pill"
+  | "sharp"
+  | "shadow"
+  | "outline";
+
+export type ThemeBackgroundType = "solid" | "gradient" | "image";
+
 export interface IThemeConfig {
   primaryColor: string;
-  layout: "classic" | "grid" | "cards";
-  background: "default" | "gradient" | "minimal" | "dark";
+  font: string;
+  buttonStyle: ThemeButtonStyle;
+  backgroundType: ThemeBackgroundType;
+  backgroundColor: string;
+  backgroundGradient: {
+    from: string;
+    to: string;
+    direction?: string;
+  };
+  backgroundImageUrl?: string;
+  textColor: string;
 }
 
 export interface ISeoConfig {
   title?: string;
   description?: string;
+  ogImageUrl?: string;
 }
 
 export interface ICreatorProfile extends Document {
@@ -86,20 +105,30 @@ const CreatorProfileSchema = new Schema<ICreatorProfile>(
     },
     theme: {
       primaryColor: { type: String, default: "#6366f1" },
-      layout: {
+      font: { type: String, default: "Inter" },
+      buttonStyle: {
         type: String,
-        enum: ["classic", "grid", "cards"],
-        default: "classic",
+        enum: ["rounded", "pill", "sharp", "shadow", "outline"],
+        default: "rounded",
       },
-      background: {
+      backgroundType: {
         type: String,
-        enum: ["default", "gradient", "minimal", "dark"],
-        default: "default",
+        enum: ["solid", "gradient", "image"],
+        default: "solid",
       },
+      backgroundColor: { type: String, default: "#f8fafc" },
+      backgroundGradient: {
+        from: { type: String, default: "#6366f1" },
+        to: { type: String, default: "#f59e0b" },
+        direction: { type: String, default: "to bottom right" },
+      },
+      backgroundImageUrl: { type: String, default: "" },
+      textColor: { type: String, default: "#0f172a" },
     },
     seo: {
       title: { type: String, default: "" },
       description: { type: String, default: "" },
+      ogImageUrl: { type: String, default: "" },
     },
   },
   {

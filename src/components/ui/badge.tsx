@@ -8,7 +8,9 @@ export type BadgeVariant =
   | "success"
   | "warning"
   | "danger"
-  | "outline";
+  | "outline"
+  | "brand"
+  | "neutral";
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: BadgeVariant;
@@ -19,7 +21,11 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 const VARIANT_CLASSES: Record<BadgeVariant, string> = {
   default:
     "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+  neutral:
+    "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
   primary:
+    "bg-brand-50 text-brand-700 border border-brand-200/80 dark:bg-brand-900/40 dark:text-brand-200 dark:border-brand-700/60",
+  brand:
     "bg-brand-50 text-brand-700 border border-brand-200/80 dark:bg-brand-900/40 dark:text-brand-200 dark:border-brand-700/60",
   accent:
     "bg-coral-50 text-coral-700 border border-coral-200/80 dark:bg-coral-700/20 dark:text-coral-200 dark:border-coral-500/30",
@@ -35,7 +41,9 @@ const VARIANT_CLASSES: Record<BadgeVariant, string> = {
 
 const DOT_CLASSES: Record<BadgeVariant, string> = {
   default: "bg-slate-500",
+  neutral: "bg-slate-500",
   primary: "bg-brand-600 dark:bg-brand-400",
+  brand: "bg-brand-600 dark:bg-brand-400",
   accent: "bg-coral-500",
   success: "bg-mint-500",
   warning: "bg-amber-500",
@@ -54,8 +62,8 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold tracking-tight",
-        size === "sm" ? "px-2.5 py-0.5 text-xs" : "px-3 py-1 text-xs",
+        "inline-flex items-center font-semibold tracking-tight transition-colors select-none",
+        size === "sm" ? "px-2.5 py-0.5 text-xs rounded-full gap-1.5" : "px-3 py-1 text-xs rounded-full gap-2",
         VARIANT_CLASSES[variant],
         className
       )}
@@ -63,12 +71,11 @@ export function Badge({
     >
       {dot && (
         <span
+          className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT_CLASSES[variant])}
           aria-hidden="true"
-          className={cn("h-1.5 w-1.5 rounded-full", DOT_CLASSES[variant])}
         />
       )}
-      {children}
+      <span>{children}</span>
     </span>
   );
 }
-

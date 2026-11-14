@@ -1,0 +1,233 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import {
+  ArrowUpRight,
+  Copy,
+  Eye,
+  ExternalLink,
+  IndianRupee,
+  Package,
+  Plus,
+  ShoppingBag,
+  Sparkles,
+  Store,
+  TrendingUp,
+  Users,
+  Zap,
+} from "lucide-react";
+import { getAuthSession } from "@/lib/auth";
+import { getCreatorProfileByUserId } from "@/services/creator.service";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
+
+export default async function DashboardPage() {
+  const session = await getAuthSession();
+  if (!session?.user?.id) {
+    redirect("/auth/login?callbackUrl=/dashboard");
+  }
+
+  const profile = await getCreatorProfileByUserId(session.user.id);
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  const username = profile.username;
+  const displayName = profile.displayName || session.user.name || "Creator";
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Top Banner / Store Link Callout */}
+      <DashboardOverviewClient
+        username={username}
+        displayName={displayName}
+        plan={session.user.plan || "free"}
+      />
+
+      {/* 4 Metric Stats Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
+        <Card className="p-4 sm:p-5 border-slate-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-muted uppercase tracking-wider">
+              Total Revenue
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <IndianRupee className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
+            ₹0
+          </div>
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
+            <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center">
+              <TrendingUp className="w-3 h-3 mr-0.5" /> +0%
+            </span>
+            <span>vs last 30 days</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-5 border-slate-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-muted uppercase tracking-wider">
+              Total Orders
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-brand-violet/10 text-brand-violet flex items-center justify-center">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
+            0
+          </div>
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
+            <span>0 pending fulfillment</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-5 border-slate-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-muted uppercase tracking-wider">
+              Store Views
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 flex items-center justify-center">
+              <Eye className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
+            0
+          </div>
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
+            <span>Unique visitors</span>
+          </div>
+        </Card>
+
+        <Card className="p-4 sm:p-5 border-slate-border">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold text-slate-muted uppercase tracking-wider">
+              Conversion Rate
+            </span>
+            <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+              <TrendingUp className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
+            0.0%
+          </div>
+          <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
+            <span>Visits to paid checkouts</span>
+          </div>
+        </Card>
+      </div>
+
+      {/* Quick Launch Checklist / Shortcuts */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base sm:text-lg font-bold text-navy font-display">
+            Get Started with Ezsygram
+          </h2>
+          <span className="text-xs text-slate-muted font-medium">3 quick steps</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="p-5 border-slate-border hover:shadow-md transition-shadow group flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-brand-violet/10 text-brand-violet flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Package className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold text-navy font-display mb-1">
+                1. Add your first product
+              </h3>
+              <p className="text-xs text-slate-muted leading-relaxed">
+                Sell an eBook, video course, 1:1 consultation, template, or digital download.
+              </p>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-border">
+              <Button asChild size="sm" variant="default" className="w-full bg-brand-violet hover:bg-brand-violet/90 text-white text-xs font-semibold">
+                <Link href="/dashboard/products">
+                  <Plus className="w-3.5 h-3.5 mr-1.5" />
+                  Create Product
+                </Link>
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-5 border-slate-border hover:shadow-md transition-shadow group flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-coral/10 text-coral flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Store className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold text-navy font-display mb-1">
+                2. Customize your storefront
+              </h3>
+              <p className="text-xs text-slate-muted leading-relaxed">
+                Choose your brand colors, fonts, links, and preview how it looks on mobile.
+              </p>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-border">
+              <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold">
+                <Link href="/dashboard/store">
+                  Customize Store
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1.5" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
+
+          <Card className="p-5 border-slate-border hover:shadow-md transition-shadow group flex flex-col justify-between">
+            <div>
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-500 flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                <Zap className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold text-navy font-display mb-1">
+                3. Automate Instagram DMs
+              </h3>
+              <p className="text-xs text-slate-muted leading-relaxed">
+                Automatically send buy links when followers comment keywords on your posts & reels.
+              </p>
+            </div>
+            <div className="mt-4 pt-4 border-t border-slate-border">
+              <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold">
+                <Link href="/dashboard/automations">
+                  Set Up Trigger
+                  <ArrowUpRight className="w-3.5 h-3.5 ml-1.5" />
+                </Link>
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      {/* Recent Orders / Activity Section */}
+      <Card className="p-6 border-slate-border">
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-border">
+          <div>
+            <h2 className="text-base font-bold text-navy font-display">Recent Orders</h2>
+            <p className="text-xs text-slate-muted">Track customer purchases and instant UPI settlements</p>
+          </div>
+          <Button asChild variant="outline" size="sm" className="text-xs">
+            <Link href="/dashboard/orders">View all orders</Link>
+          </Button>
+        </div>
+
+        {/* Empty Orders State */}
+        <div className="text-center py-10">
+          <div className="w-12 h-12 rounded-2xl bg-canvas border border-slate-border flex items-center justify-center mx-auto mb-3 text-slate-muted">
+            <ShoppingBag className="w-6 h-6" />
+          </div>
+          <h3 className="text-sm font-bold text-navy font-display mb-1">
+            No sales yet
+          </h3>
+          <p className="text-xs text-slate-muted max-w-sm mx-auto mb-4">
+            Once you share your store link in your Instagram bio or post captions, your orders will appear here automatically.
+          </p>
+          <Button asChild size="sm" variant="outline" className="text-xs font-semibold">
+            <Link href={`/${username}`} target="_blank">
+              Preview Store
+              <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+            </Link>
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}

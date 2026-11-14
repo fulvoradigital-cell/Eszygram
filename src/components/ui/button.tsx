@@ -10,7 +10,9 @@ export type ButtonVariant =
   | "accent"
   | "outline"
   | "ghost"
-  | "destructive";
+  | "destructive"
+  | "default"
+  | "gradient";
 
 export type ButtonSize = "xs" | "sm" | "md" | "lg";
 
@@ -22,10 +24,15 @@ export interface ButtonProps
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   fullWidth?: boolean;
+  asChild?: boolean;
 }
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary:
+    "bg-brand-gradient text-white shadow-glow hover:bg-brand-gradient-hover hover:brightness-105 active:scale-[0.985]",
+  gradient:
+    "bg-brand-gradient text-white shadow-glow hover:bg-brand-gradient-hover hover:brightness-105 active:scale-[0.985]",
+  default:
     "bg-brand-gradient text-white shadow-glow hover:bg-brand-gradient-hover hover:brightness-105 active:scale-[0.985]",
   secondary:
     "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 shadow-soft active:scale-[0.985]",
@@ -57,12 +64,29 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       leftIcon,
       rightIcon,
       fullWidth = false,
+      asChild = false,
       type = "button",
       children,
       ...props
     },
     ref
   ) => {
+    const buttonClasses = cn(
+      "inline-flex items-center justify-center font-semibold tracking-tight transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-55 dark:focus-visible:ring-offset-canvas-dark",
+      VARIANT_CLASSES[variant],
+      SIZE_CLASSES[size],
+      fullWidth && "w-full",
+      className
+    );
+
+    if (asChild && React.isValidElement(children)) {
+      const child = children as React.ReactElement<{ className?: string; children?: React.ReactNode }>;
+      return React.cloneElement(child, {
+        className: cn(buttonClasses, child.props.className),
+        ...props,
+      });
+    }
+
     const isDisabled = disabled || isLoading;
 
     return (
@@ -71,13 +95,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         type={type}
         disabled={isDisabled}
         aria-busy={isLoading || undefined}
-        className={cn(
-          "inline-flex items-center justify-center font-semibold tracking-tight transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-55 dark:focus-visible:ring-offset-canvas-dark",
-          VARIANT_CLASSES[variant],
-          SIZE_CLASSES[size],
-          fullWidth && "w-full",
-          className
-        )}
+        className={buttonClasses}
         {...props}
       >
         {isLoading ? (
@@ -93,4 +111,3 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 
 Button.displayName = "Button";
-

@@ -89,6 +89,8 @@ export async function createUserWithPassword(
   return toPublicUserDTO(user);
 }
 
+export const createUser = createUserWithPassword;
+
 export async function upsertGoogleUser(params: {
   email: string;
   name?: string | null;

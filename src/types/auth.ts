@@ -1,5 +1,20 @@
-import { DefaultSession } from "next-auth";
-import { UserRole, UserPlan } from "@/models/User";
+import type { DefaultSession } from "next-auth";
+
+export type UserRole = "creator" | "buyer" | "admin";
+export type UserPlan = "free" | "pro" | "business";
+export type UserStatus = "active" | "suspended";
+
+export interface PublicUserDTO {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  plan: UserPlan;
+  planExpiresAt: string | null;
+  status: UserStatus;
+  avatarUrl?: string;
+  createdAt: string;
+}
 
 declare module "next-auth" {
   interface Session {
@@ -7,8 +22,7 @@ declare module "next-auth" {
       id: string;
       role: UserRole;
       plan: UserPlan;
-      onboardingCompleted: boolean;
-      username?: string;
+      status: UserStatus;
     } & DefaultSession["user"];
   }
 
@@ -16,8 +30,7 @@ declare module "next-auth" {
     id: string;
     role: UserRole;
     plan: UserPlan;
-    onboardingCompleted: boolean;
-    username?: string;
+    status: UserStatus;
   }
 }
 
@@ -26,7 +39,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: UserRole;
     plan: UserPlan;
-    onboardingCompleted: boolean;
-    username?: string;
+    status: UserStatus;
   }
 }
+

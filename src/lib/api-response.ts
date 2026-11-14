@@ -1,80 +1,116 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import { ApiResponse } from "@/types/api";
+import type { ApiErrorResponse, ApiSuccessResponse } from "@/types";
 
-/**
- * Returns a standardized success API response with HTTP status.
- */
-export function apiSuccess<T>(data: T, status = 200): NextResponse<ApiResponse<T>> {
+export class AppError extends Error {
+  public readonly statusCode: number;
+  public readonly code: string;
+  public readonly details?: unknown;
+
+  constructor(
+    message: string,
+    statusCode = 400,
+    code = "BAD_REQUEST",
+    details?: unknown
+  ) {
+    super(message);
+    this.name = "AppError";
+    this.statusCode = statusCode;
+    this.code = code;
+    this.details = details;
+  }
+}
+
+export function apiSuccess<T>(
+  data: T,
+  status = 200
+): NextResponse<ApiSuccessResponse<T>> {
   return NextResponse.json(
     {
       success: true,
       data,
+      error: null,
     },
     { status }
   );
 }
 
-/**
- * Returns a standardized error API response with HTTP status.
- */
 export function apiError(
   message: string,
   status = 400,
-  code?: string,
+  code = "BAD_REQUEST",
   details?: unknown
-): NextResponse<ApiResponse<never>> {
+): NextResponse<ApiErrorResponse> {
   return NextResponse.json(
     {
       success: false,
+      data: null,
       error: {
         message,
-        code: code || `HTTP_${status}`,
-        ...(details ? { details } : {}),
+        code,
+        ...(details !== undefined ? { details } : {}),
       },
     },
     { status }
   );
 }
 
-/**
- * Universal error handler for Next.js App Router API route handlers.
- * Automatically inspects and shapes Zod validation errors, MongoDB errors, and standard exceptions.
- */
-export function handleApiError(error: unknown): NextResponse<ApiResponse<never>> {
-  console.error("[API_ERROR]", error);
+export function formatZodError(error: ZodError): Record<string, string[]> {
+  const fieldErrors: Record<string, string[]> = {};
+  for (const issue of error.issues) {
+    const path = issue.path.length > 0 ? issue.path.join(".") : "_root";
+    if (!fieldErrors[path]) {
+      fieldErrors[path] = [];
+    }
+    fieldErrors[path].push(issue.message);
+  }
+  return fieldErrors;
+}
 
-  // Handle Zod Schema Validation Errors
+export function handleApiError(error: unknown): NextResponse<ApiErrorResponse> {
   if (error instanceof ZodError) {
     return apiError(
-      "Validation failed",
+      "Validation failed. Please check your input.",
       400,
       "VALIDATION_ERROR",
-      error.flatten().fieldErrors
+      formatZodError(error)
     );
   }
 
-  // Handle MongoDB / Mongoose Duplicate Key Error (E11000)
+  if (error instanceof AppError) {
+    return apiError(error.message, error.statusCode, error.code, error.details);
+  }
+
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "name" in error &&
+    (error as { name: string }).name === "ValidationError"
+  ) {
+    return apiError("Database validation failed.", 400, "DB_VALIDATION_ERROR");
+  }
+
   if (
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
     (error as { code: number }).code === 11000
   ) {
-    const keyPattern = (error as { keyPattern?: Record<string, number> }).keyPattern;
-    const duplicateFields = keyPattern ? Object.keys(keyPattern).join(", ") : "resource";
     return apiError(
-      `A record with this ${duplicateFields} already exists.`,
+      "A record with this unique value already exists.",
       409,
-      "DUPLICATE_RESOURCE"
+      "DUPLICATE_KEY"
     );
   }
 
-  // Standard JavaScript / Application Errors
-  if (error instanceof Error) {
-    return apiError(error.message, 500, "INTERNAL_SERVER_ERROR");
+  if (process.env.NODE_ENV !== "production") {
+    console.error("[API Error]", error instanceof Error ? error.message : error);
   }
 
-  return apiError("An unexpected error occurred", 500, "UNKNOWN_ERROR");
+  return apiError(
+    "Something went wrong. Please try again later.",
+    500,
+    "INTERNAL_SERVER_ERROR"
+  );
 }
 

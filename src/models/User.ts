@@ -1,7 +1,5 @@
-import mongoose, { Document, Model, Schema } from "mongoose";
-
-export type UserRole = "creator" | "admin";
-export type UserPlan = "free" | "starter" | "pro";
+import mongoose, { Schema, type Document, type Model } from "mongoose";
+import type { UserPlan, UserRole, UserStatus } from "@/types";
 
 export interface IUser extends Document {
   _id: mongoose.Types.ObjectId;
@@ -10,9 +8,10 @@ export interface IUser extends Document {
   passwordHash?: string;
   role: UserRole;
   plan: UserPlan;
-  onboardingCompleted: boolean;
-  resetPasswordToken?: string;
-  resetPasswordExpires?: Date;
+  planExpiresAt: Date | null;
+  status: UserStatus;
+  avatarUrl?: string;
+  googleId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,7 +22,8 @@ const UserSchema = new Schema<IUser>(
       type: String,
       required: [true, "Name is required"],
       trim: true,
-      maxlength: [100, "Name cannot exceed 100 characters"],
+      minlength: 2,
+      maxlength: 80,
     },
     email: {
       type: String,
@@ -35,40 +35,52 @@ const UserSchema = new Schema<IUser>(
     },
     passwordHash: {
       type: String,
-      required: false, // Optional for OAuth accounts
-      select: false, // Always omit from queries unless explicitly selected
+      select: false,
     },
     role: {
       type: String,
-      enum: ["creator", "admin"],
+      enum: ["creator", "buyer", "admin"],
       default: "creator",
+      index: true,
     },
     plan: {
       type: String,
-      enum: ["free", "starter", "pro"],
+      enum: ["free", "pro", "business"],
       default: "free",
     },
-    onboardingCompleted: {
-      type: Boolean,
-      default: false,
+    planExpiresAt: {
+      type: Date,
+      default: null,
+    },
+    status: {
+      type: String,
+      enum: ["active", "suspended"],
+      default: "active",
       index: true,
     },
-    resetPasswordToken: {
+    avatarUrl: {
       type: String,
-      select: false,
+      trim: true,
     },
-    resetPasswordExpires: {
-      type: Date,
-      select: false,
+    googleId: {
+      type: String,
+      sparse: true,
+      index: true,
     },
   },
   {
     timestamps: true,
+    toJSON: {
+      transform(_doc, ret: Record<string, unknown>) {
+        delete ret.passwordHash;
+        delete ret.__v;
+        return ret;
+      },
+    },
   }
 );
 
-// Prevent model overwrite in Next.js HMR
-const User: Model<IUser> =
-  mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+export const User: Model<IUser> =
+  (mongoose.models.User as Model<IUser>) ||
+  mongoose.model<IUser>("User", UserSchema);
 
-export default User;

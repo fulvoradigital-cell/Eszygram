@@ -1,148 +1,137 @@
-# Creator Revenue OS — Engineering & Agent Rules (AGENTS.md)
+# Ezsygram — Engineering & Agent Guidelines (`AGENTS.md`)
 
-Welcome to **Creator Revenue OS**, the modern digital commerce, link-in-bio, and monetization engine built specifically for Indian digital creators, educators, and influencers (a high-performance alternative to Stan Store and SuperProfile).
+**Ezsygram** (*"Sell. Automate. Grow."*) is a production-ready SaaS platform enabling Indian creators, coaches, educators, and small businesses to build a mobile-first link-in-bio storefront, sell digital products, courses, bookings, and memberships with UPI-first payments, and automate Instagram comments and DMs.
 
-This document serves as the single source of truth for AI agents and developers working on this codebase. Follow these conventions and rules strictly.
+This document is the authoritative guide for developers and AI coding agents contributing to this codebase.
 
 ---
 
-## 1. Core Principles & Golden Rules
+## 1. Golden Rules (Non-Negotiable)
 
-### 1. Always Validate with Zod
-- **Zero untrusted input**: Every API route (`POST`, `PUT`, `PATCH`, `DELETE`), URL query string, webhook payload, and form submission **must** be validated with Zod schemas defined in `src/validators/`.
-- Never trust raw `req.json()` or query params. Extract and validate using `schema.safeParse()`.
-- Return standardized `400 Bad Request` responses containing Zod validation issues formatted by our API response helper.
+1. **Always Validate with Zod**
+   - Every API route (`POST`, `PUT`, `PATCH`, `DELETE`), URL query parameter, webhook payload, and form submission must be parsed with Zod schemas in `src/validators/`.
+   - Never pass unvalidated `req.json()` or raw request fields into services or Mongoose models.
+   - Return standardized `400 Bad Request` responses using `apiError` / `handleApiError` when validation fails.
 
-### 2. Never Expose Secrets
-- Never log or return database credentials, Razorpay secret keys, webhook secrets, auth secrets, S3/R2 secret keys, or password hashes to the client.
-- Sensitive environment variables must **never** have the `NEXT_PUBLIC_` prefix.
-- Clean Mongoose documents before returning them (remove `password`, `__v`, internal tokens). Use projections or `.select('-password')`.
+2. **Never Trust Client-Side Prices**
+   - Monetary amounts must be stored as integers in **paise** (1 INR = 100 paise) in MongoDB.
+   - Razorpay orders, coupon discounts, order bumps, and platform fees must always be computed strictly on the server from authoritative database records. Ignore any price, fee, or total sent from the browser.
 
-### 3. Mobile-First UI
-- In India, >85% of creator audience traffic arrives via mobile devices (Instagram in-app browser, WhatsApp, YouTube descriptions).
-- Every storefront, checkout drawer, course reader, and dashboard page **must** be designed and tested on mobile viewport widths (360px–420px) first before expanding to desktop.
-- Touch targets must be at least 44x44px. Avoid desktop-only hover dependencies for critical user journeys.
-- Support UPI fast checkout and bottom-sheet drawers for mobile conversion.
+3. **Never Expose Secrets**
+   - Never log, serialize, or return `MONGODB_URI`, `NEXTAUTH_SECRET`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET`, `RESEND_API_KEY`, `STORAGE_*` keys, `META_APP_SECRET`, `ENCRYPTION_KEY`, `passwordHash`, or encrypted OAuth tokens to the client.
+   - Never prefix secret environment variables with `NEXT_PUBLIC_`.
+   - Always sanitize Mongoose documents (e.g., `.select("-passwordHash")` or explicit DTO mapping) before returning API payloads.
 
-### 4. Write a Short Test Plan After Each Feature
-- When implementing any new feature, endpoint, or major component, you must document a short, actionable **Test Plan**:
-  1. **Happy Path**: Expected input and successful outcome.
-  2. **Validation / Edge Cases**: Invalid inputs, missing fields, zero/negative amounts, unauthorized access.
-  3. **Verification Steps**: Specific cURL or browser verification steps with expected HTTP status and payload shapes.
+4. **Mobile-First UI**
+   - Most buyers and creators access storefronts directly from mobile Instagram in-app browsers.
+   - Design every layout for 360px–430px viewports first, then scale up with responsive Tailwind breakpoints (`sm:`, `md:`, `lg:`, `xl:`).
+   - Maintain accessible touch targets (minimum `44x44px` on interactive controls), WCAG AA color contrast, semantic HTML, focus-visible rings, and `prefers-reduced-motion` support.
+
+5. **Authorize Every API Route**
+   - Protected routes (`/api/creator/*`, `/api/dashboard/*`, `/api/admin/*`) must verify the authenticated session via `getServerSession(authOptions)` and check role/ownership before accessing or mutating data.
+   - Never query or mutate a record by `id` alone when owned by a creator; always scope queries with `creatorId: session.user.id` or `userId: session.user.id`.
+   - Admin routes must verify `session.user.role === "admin"`.
+   - Webhook endpoints must verify HMAC signatures (`X-Razorpay-Signature`, `X-Hub-Signature-256`) before processing payloads.
+
+6. **Write a Short Test Plan After Each Feature**
+   - Every completed feature or phase must include a concise, actionable test plan covering:
+     - **Happy Path**: Primary user flow and expected outcome.
+     - **Edge & Validation Cases**: Bad input, missing auth, wrong role, boundary limits.
+     - **Verification Commands / Steps**: Concrete browser checks, `curl` calls, typecheck, lint, and build verification.
+
+7. **Brand & Naming Hygiene**
+   - Never mention or reference any external competitor company or brand name anywhere in code, comments, UI copy, or documentation.
 
 ---
 
 ## 2. Technology Stack
 
-- **Framework**: Next.js 14+ (App Router, Server Components by default, Client Components with `"use client"` when interactivity/hooks are needed).
-- **Language**: TypeScript (Strict mode enabled, no implicit `any`).
-- **Styling**: Tailwind CSS with custom design tokens (Brand Indigo/Violet, Warm Amber/Saffron accent, soft shadows, rounded corners).
-- **Typography**: Inter font via `next/font/google`.
-- **Database**: MongoDB Atlas with Mongoose (using cached singleton connection for serverless resilience).
-- **Authentication**: Auth.js / NextAuth (Credentials with bcryptjs + Google OAuth), using secure JWT sessions.
-- **Validation**: Zod for runtime schema validation.
-- **Payments**: Razorpay (UPI, Netbanking, Cards, Wallets tailored for Indian creators).
-- **Storage**: Cloudflare R2 / AWS S3 S3-compatible object storage.
-- **Email**: Resend transactional emails.
+- **Framework**: Next.js 14+ (App Router), React 18, TypeScript (strict mode)
+- **Styling**: Tailwind CSS with custom Ezsygram design tokens (`#6D28D9` to `#4F46E5` primary gradient, `#FF7A59` warm coral accent, `#10B981` mint success, `#FAFAFB` light canvas, `#0B0B1A` deep navy dark mode)
+- **Typography**: `Inter` (UI) + `Plus Jakarta Sans` (headings/display) via `next/font/google`
+- **Database**: MongoDB Atlas with Mongoose (serverless global connection caching in `src/lib/db.ts`)
+- **Authentication**: Auth.js (`next-auth`) with Credentials (`bcryptjs`) + Google OAuth and JWT sessions
+- **Validation**: Zod (`src/validators/`)
+- **Payments**: Razorpay (Orders, Subscriptions, Webhooks)
+- **Transactional Email**: Resend
+- **Object Storage**: S3-compatible private bucket (Cloudflare R2 / AWS S3) via `@aws-sdk/client-s3` + presigned URLs
+- **UI & Visualization**: Framer Motion, Recharts, `@dnd-kit/core` & `@dnd-kit/sortable`, `lucide-react`
+- **Deployment Target**: Vercel + MongoDB Atlas
 
 ---
 
-## 3. Directory Layout
+## 3. Folder Structure
 
-All application source code resides strictly inside `src/`:
-
-```
-creator-revenue-os/
-├── AGENTS.md                  # Project rules & architecture guidelines (this file)
-├── .env.example               # Template with all environment variables
-├── .env.local                 # Local development variables (git-ignored)
-├── package.json               # Dependencies and scripts
-├── tsconfig.json              # TypeScript strict configuration
-├── tailwind.config.ts         # Design tokens & color system
-├── postcss.config.mjs         # PostCSS configuration
-├── next.config.mjs            # Next.js configuration
-├── src/
-│   ├── app/                   # App Router pages, layouts, and API routes
-│   │   ├── api/               # API endpoints
-│   │   │   └── auth/          # NextAuth route handler [...nextauth]
-│   │   ├── error.tsx          # App route error boundary
-│   │   ├── not-found.tsx      # 404 handler
-│   │   ├── layout.tsx         # Root layout with font and toast/providers
-│   │   └── page.tsx           # Home landing / dashboard placeholder
-│   ├── components/            # Reusable React components
-│   │   ├── ui/                # Base design system primitives (Button, Input, Card, Modal, Toast, Skeleton, Table, Badge, EmptyState)
-│   │   └── providers/         # Context providers (SessionProvider, ToastProvider)
-│   ├── lib/                   # Shared utilities, singletons, and configurations
-│   │   ├── db.ts              # Cached Mongoose connection for serverless
-│   │   ├── api-response.ts    # Standardized API response helper { success, data, error }
-│   │   ├── auth.ts            # NextAuth configuration and authOptions
-│   │   └── utils.ts           # Styling helper (cn / clsx / tailwind-merge)
-│   ├── models/                # Mongoose database models
-│   │   └── User.ts            # Creator / User schema and model
-│   ├── services/              # Domain logic and database service layers
-│   │   └── user.service.ts    # User service methods
-│   ├── types/                 # Shared TypeScript interfaces and type definitions
-│   │   ├── api.ts             # API response and request shapes
-│   │   ├── auth.ts            # Auth session and token extensions
-│   │   └── index.ts           # Export barrel for types
-│   └── validators/            # Zod validation schemas
-│       └── auth.validator.ts  # Registration, login, and profile schemas
+```text
+ezsygram/
+├── AGENTS.md                       # Engineering rules and architecture reference
+├── .env.example                    # Complete environment variable template
+├── next.config.mjs                 # Next.js configuration
+├── tailwind.config.ts              # Brand colors, fonts, shadows, radius tokens
+├── tsconfig.json                   # Strict TypeScript settings
+└── src/
+    ├── app/                        # App Router pages, layouts, metadata assets, API routes
+    │   ├── api/                    # Route handlers (/api/health, /api/auth/*, etc.)
+    │   ├── error.tsx               # Route-segment error boundary
+    │   ├── global-error.tsx        # Root error boundary
+    │   ├── not-found.tsx           # Branded 404 page
+    │   ├── icon.tsx                # Generated favicon from Ezsygram Logo mark
+    │   ├── apple-icon.tsx          # Generated apple-touch-icon
+    │   ├── opengraph-image.tsx     # Generated OG image
+    │   ├── layout.tsx              # Root layout (fonts, metadata, providers)
+    │   └── page.tsx                # Home page
+    ├── components/
+    │   ├── brand/                  # <Logo /> SVG variants & <ThemeToggle />
+    │   ├── providers/              # AppProviders (Session, Theme, Toast)
+    │   └── ui/                     # Design system primitives (Button, Input, Select, Textarea, Switch, Card, Modal, Drawer, Tabs, Table, Badge, Toast, Skeleton, EmptyState, Tooltip, Avatar, Dropdown)
+    ├── lib/                        # Core singletons and helpers
+    │   ├── api-response.ts         # Standardized { success, data, error } responses + AppError
+    │   ├── auth.ts                 # NextAuth configuration & session helpers
+    │   ├── db.ts                   # Cached Mongoose connection
+    │   └── utils.ts                # Class merging, currency/date formatters
+    ├── models/                     # Mongoose schemas & TypeScript document types
+    ├── services/                   # Business logic & data access layer
+    ├── types/                      # Shared TypeScript interfaces and module augmentations
+    └── validators/                 # Zod schemas for requests, forms, and webhooks
 ```
 
 ---
 
-## 4. API Response Specification
+## 4. Standardized API Response Shape
 
-All API routes (`/api/*`) must return JSON adhering to the standardized envelope shape:
+Every `/api/*` endpoint must return JSON with the exact `{ success, data, error }` contract:
 
-```typescript
-// Success Response (HTTP 200/201)
+```ts
+// Success (2xx)
 {
   "success": true,
-  "data": { ... }
+  "data": { ... },
+  "error": null
 }
 
-// Error Response (HTTP 400/401/403/404/500)
+// Error (4xx / 5xx)
 {
   "success": false,
+  "data": null,
   "error": {
-    "message": "Human-readable error description",
-    "code": "ERROR_CODE",
-    "details": { ...optional validation details or field errors... }
+    "message": "Human-readable description",
+    "code": "VALIDATION_ERROR",
+    "details": { ... } // optional structured field errors
   }
 }
 ```
 
-Use the helper functions provided in `src/lib/api-response.ts`:
-- `apiSuccess(data, status = 200)`
-- `apiError(message, status = 400, code?, details?)`
+Use `apiSuccess`, `apiError`, and `handleApiError` from `@/lib/api-response`.
 
 ---
 
-## 5. Design System & UI Components
+## 5. Coding & Git Conventions
 
-### Color Tokens
-- **Brand Primary**: Indigo/Violet (`brand-500: #6366f1`, `brand-600: #4f46e5`) — evokes modern professionalism and trust.
-- **Warm Accent**: Amber/Gold/Saffron (`accent-500: #f59e0b`, `accent-600: #d97706`) — high-conversion accent for CTAs, sale badges, and highlight elements.
-- **Neutrals**: Slate / Zinc grays for crisp readability.
-
-### Reusable UI Primitives (`src/components/ui/`)
-- `Button`: Primary, secondary, outline, ghost, destructive, with loading spinners and sizes (`sm`, `md`, `lg`).
-- `Input`: Accessible input with label, helper text, error message state, and icon adornments.
-- `Card`: Composable `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter` with rounded corners and soft shadows.
-- `Modal`: Accessible dialog with overlay, close triggers, and smooth animations.
-- `Toast`: Global notification toast system (Success, Error, Info, Warning).
-- `Skeleton`: Shimmering placeholder components for loading states.
-- `Table`: Responsive table with `TableHeader`, `TableBody`, `TableRow`, `TableHead`, and `TableCell`.
-- `Badge`: Status tags (primary, success, warning, neutral, accent).
-- `EmptyState`: Clean placeholder with iconography, title, subtitle, and primary call-to-action button.
-
----
-
-## 6. Development Workflow
-
-- Run dev server: `npm run dev`
-- Run linting: `npm run lint`
-- Build for production: `npm run build`
-- Always verify typecheck passes with `npx tsc --noEmit` before considering work done.
+- Prefer Server Components by default; mark interactive leaves with `"use client"`.
+- Keep business rules inside `src/services/` rather than duplicating logic inside Route Handlers.
+- Use path alias `@/*` pointing to `./src/*`.
+- Run verification checks after each milestone:
+  - `pnpm typecheck` (`tsc --noEmit`)
+  - `pnpm lint` (`next lint`)
+  - `pnpm build` (`next build`)
 

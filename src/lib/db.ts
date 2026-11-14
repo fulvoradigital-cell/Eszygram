@@ -1,10 +1,6 @@
 import mongoose from "mongoose";
+import { AppError } from "./api-response";
 
-/**
- * Global interface for caching the Mongoose connection in Node.js global scope.
- * This prevents creating multiple connections during Next.js App Router HMR
- * and serverless function cold starts.
- */
 interface MongooseCache {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -15,7 +11,7 @@ declare global {
   var mongooseCache: MongooseCache | undefined;
 }
 
-let cached: MongooseCache = global.mongooseCache || {
+const cached: MongooseCache = global.mongooseCache ?? {
   conn: null,
   promise: null,
 };
@@ -24,15 +20,27 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
-/**
- * Connects to MongoDB Atlas using Mongoose and returns the cached connection.
- */
-export async function connectToDatabase(): Promise<typeof mongoose> {
-  const MONGODB_URI = process.env.MONGODB_URI;
+export function isDatabaseConfigured(): boolean {
+  const uri = process.env.MONGODB_URI;
+  return Boolean(
+    uri &&
+      uri.trim().length > 0 &&
+      !uri.includes("<username>") &&
+      !uri.includes("<password>")
+  );
+}
 
-  if (!MONGODB_URI) {
-    throw new Error(
-      "Please define the MONGODB_URI environment variable inside .env.local"
+/**
+ * Establishes and caches a singleton Mongoose connection safe for serverless functions.
+ */
+export async function dbConnect(): Promise<typeof mongoose> {
+  const uri = process.env.MONGODB_URI;
+
+  if (!uri || uri.trim().length === 0) {
+    throw new AppError(
+      "Database connection string is not configured.",
+      503,
+      "DATABASE_NOT_CONFIGURED"
     );
   }
 
@@ -41,27 +49,22 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   }
 
   if (!cached.promise) {
-    const opts: mongoose.ConnectOptions = {
-      bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    };
+    mongoose.set("strictQuery", true);
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
-      return mongooseInstance;
-    });
+    cached.promise = mongoose
+      .connect(uri, {
+        bufferCommands: false,
+        maxPoolSize: 10,
+        serverSelectionTimeoutMS: 5000,
+      })
+      .then((mongooseInstance) => mongooseInstance)
+      .catch((err) => {
+        cached.promise = null;
+        throw err;
+      });
   }
 
-  try {
-    cached.conn = await cached.promise;
-  } catch (error) {
-    cached.promise = null;
-    throw error;
-  }
-
+  cached.conn = await cached.promise;
   return cached.conn;
 }
-
-export default connectToDatabase;
 

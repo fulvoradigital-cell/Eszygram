@@ -2,3 +2,6 @@ export { User, type IUser } from "./User";
 export { ContactMessage, type IContactMessage } from "./ContactMessage";
 export { CreatorProfile, type ICreatorProfile } from "./CreatorProfile";
 export { PasswordResetToken, type IPasswordResetToken } from "./PasswordResetToken";
+export { Block, type IBlock } from "./Block";
+export { Lead, type ILead } from "./Lead";
+export { StoreEvent, type IStoreEvent } from "./StoreEvent";

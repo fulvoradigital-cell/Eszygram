@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
+  ArrowDownRight,
   ArrowUpRight,
   Copy,
   Eye,
@@ -11,16 +12,21 @@ import {
   ShoppingBag,
   Sparkles,
   Store,
+  TrendingDown,
   TrendingUp,
   Users,
   Zap,
 } from "lucide-react";
 import { getAuthSession } from "@/lib/auth";
 import { getCreatorProfileByUserId } from "@/services/creator.service";
+import { getAnalyticsReport } from "@/services/analytics.service";
+import { getOrdersByCreatorId } from "@/services/order.service";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DashboardOverviewClient } from "@/components/dashboard/DashboardOverviewClient";
+
+export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const session = await getAuthSession();
@@ -35,6 +41,13 @@ export default async function DashboardPage() {
 
   const username = profile.username;
   const displayName = profile.displayName || session.user.name || "Creator";
+
+  const [analytics, { orders: recentOrders }] = await Promise.all([
+    getAnalyticsReport(session.user.id, "30d"),
+    getOrdersByCreatorId(session.user.id, { limit: 5 }),
+  ]);
+
+  const overview = analytics.overview;
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -57,12 +70,18 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-            ₹0
+            ₹{overview.totalRevenueInr.toLocaleString("en-IN")}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
-            <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center">
-              <TrendingUp className="w-3 h-3 mr-0.5" /> +0%
-            </span>
+            {overview.revenueGrowth >= 0 ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center">
+                <ArrowUpRight className="w-3 h-3 mr-0.5" /> +{overview.revenueGrowth}%
+              </span>
+            ) : (
+              <span className="text-rose-500 font-semibold inline-flex items-center">
+                <ArrowDownRight className="w-3 h-3 mr-0.5" /> {overview.revenueGrowth}%
+              </span>
+            )}
             <span>vs last 30 days</span>
           </div>
         </Card>
@@ -77,10 +96,19 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-            0
+            {overview.paidOrders}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
-            <span>0 pending fulfillment</span>
+            {overview.ordersGrowth >= 0 ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center">
+                <ArrowUpRight className="w-3 h-3 mr-0.5" /> +{overview.ordersGrowth}%
+              </span>
+            ) : (
+              <span className="text-rose-500 font-semibold inline-flex items-center">
+                <ArrowDownRight className="w-3 h-3 mr-0.5" /> {overview.ordersGrowth}%
+              </span>
+            )}
+            <span>paid checkouts</span>
           </div>
         </Card>
 
@@ -94,10 +122,13 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-            0
+            {overview.storeViews.toLocaleString("en-IN")}
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
-            <span>Unique visitors</span>
+            <span className="text-slate-text font-semibold">
+              {overview.uniqueVisitors}
+            </span>
+            <span>unique visitors</span>
           </div>
         </Card>
 
@@ -111,10 +142,13 @@ export default async function DashboardPage() {
             </div>
           </div>
           <div className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-            0.0%
+            {overview.conversionRate.toFixed(1)}%
           </div>
           <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-muted">
-            <span>Visits to paid checkouts</span>
+            <span className="text-slate-text font-semibold">
+              {overview.blockClicks}
+            </span>
+            <span>link interactions</span>
           </div>
         </Card>
       </div>
@@ -123,9 +157,11 @@ export default async function DashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base sm:text-lg font-bold text-navy font-display">
-            Get Started with Ezsygram
+            Creator Quick Actions
           </h2>
-          <span className="text-xs text-slate-muted font-medium">3 quick steps</span>
+          <Button asChild variant="outline" size="sm" className="text-xs">
+            <Link href="/dashboard/analytics">View Deep Analytics</Link>
+          </Button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -135,7 +171,7 @@ export default async function DashboardPage() {
                 <Package className="w-5 h-5" />
               </div>
               <h3 className="text-sm font-bold text-navy font-display mb-1">
-                1. Add your first product
+                1. Add your products
               </h3>
               <p className="text-xs text-slate-muted leading-relaxed">
                 Sell an eBook, video course, 1:1 consultation, template, or digital download.
@@ -157,7 +193,7 @@ export default async function DashboardPage() {
                 <Store className="w-5 h-5" />
               </div>
               <h3 className="text-sm font-bold text-navy font-display mb-1">
-                2. Customize your storefront
+                2. Customize storefront
               </h3>
               <p className="text-xs text-slate-muted leading-relaxed">
                 Choose your brand colors, fonts, links, and preview how it looks on mobile.
@@ -179,10 +215,10 @@ export default async function DashboardPage() {
                 <Zap className="w-5 h-5" />
               </div>
               <h3 className="text-sm font-bold text-navy font-display mb-1">
-                3. Automate Instagram DMs
+                3. Automate Instagram
               </h3>
               <p className="text-xs text-slate-muted leading-relaxed">
-                Automatically send buy links when followers comment keywords on your posts & reels.
+                Automatically send buy links when followers comment keywords on your reels.
               </p>
             </div>
             <div className="mt-4 pt-4 border-t border-slate-border">
@@ -209,24 +245,73 @@ export default async function DashboardPage() {
           </Button>
         </div>
 
-        {/* Empty Orders State */}
-        <div className="text-center py-10">
-          <div className="w-12 h-12 rounded-2xl bg-canvas border border-slate-border flex items-center justify-center mx-auto mb-3 text-slate-muted">
-            <ShoppingBag className="w-6 h-6" />
+        {recentOrders.length === 0 ? (
+          <div className="text-center py-10">
+            <div className="w-12 h-12 rounded-2xl bg-canvas border border-slate-border flex items-center justify-center mx-auto mb-3 text-slate-muted">
+              <ShoppingBag className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-navy font-display mb-1">
+              No sales yet
+            </h3>
+            <p className="text-xs text-slate-muted max-w-sm mx-auto mb-4">
+              Once you share your store link in your Instagram bio or post captions, your orders will appear here automatically.
+            </p>
+            <Button asChild size="sm" variant="outline" className="text-xs font-semibold">
+              <Link href={`/${username}`} target="_blank">
+                Preview Store
+                <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
+              </Link>
+            </Button>
           </div>
-          <h3 className="text-sm font-bold text-navy font-display mb-1">
-            No sales yet
-          </h3>
-          <p className="text-xs text-slate-muted max-w-sm mx-auto mb-4">
-            Once you share your store link in your Instagram bio or post captions, your orders will appear here automatically.
-          </p>
-          <Button asChild size="sm" variant="outline" className="text-xs font-semibold">
-            <Link href={`/${username}`} target="_blank">
-              Preview Store
-              <ExternalLink className="w-3.5 h-3.5 ml-1.5" />
-            </Link>
-          </Button>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-canvas border-b border-slate-border text-slate-muted uppercase font-semibold text-[10px] tracking-wider">
+                <tr>
+                  <th className="py-2.5 px-3">Order ID</th>
+                  <th className="py-2.5 px-3">Customer</th>
+                  <th className="py-2.5 px-3">Product</th>
+                  <th className="py-2.5 px-3">Amount</th>
+                  <th className="py-2.5 px-3">Status</th>
+                  <th className="py-2.5 px-3 text-right">Date</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-border">
+                {recentOrders.map((ord) => (
+                  <tr key={ord.id} className="hover:bg-canvas/50">
+                    <td className="py-3 px-3 font-mono text-[11px] font-semibold text-slate-muted">
+                      #{ord.invoiceNumber}
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="font-bold text-navy">{ord.buyerName}</div>
+                      <div className="text-[11px] text-slate-muted">{ord.buyerEmail}</div>
+                    </td>
+                    <td className="py-3 px-3 font-medium text-navy max-w-xs truncate">
+                      {ord.productTitle}
+                    </td>
+                    <td className="py-3 px-3 font-bold text-navy">
+                      ₹{ord.amountInr.toLocaleString("en-IN")}
+                    </td>
+                    <td className="py-3 px-3">
+                      <Badge
+                        variant={ord.status === "paid" ? "success" : "neutral"}
+                        size="sm"
+                      >
+                        {ord.status}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-3 text-right text-slate-muted text-[11px]">
+                      {new Date(ord.createdAt).toLocaleDateString("en-IN", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </Card>
     </div>
   );

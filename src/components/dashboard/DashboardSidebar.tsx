@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
+  BarChart3,
   ExternalLink,
   IndianRupee,
   LayoutDashboard,
@@ -24,6 +25,7 @@ export const DASHBOARD_NAV_ITEMS = [
   { href: "/dashboard/store", label: "Store", icon: Store },
   { href: "/dashboard/products", label: "Products", icon: Package },
   { href: "/dashboard/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/dashboard/customers", label: "Customers", icon: Users },
   { href: "/dashboard/automations", label: "Automations", icon: Zap, badge: "New" },
   { href: "/dashboard/payouts", label: "Payouts", icon: IndianRupee },

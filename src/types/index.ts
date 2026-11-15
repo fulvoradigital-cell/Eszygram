@@ -10,3 +10,4 @@ export * from "./buyer";
 export * from "./automation";
 export * from "./analytics";
 export * from "./customer";
+export * from "./payout";

@@ -1,8 +1,10 @@
 import mongoose from "mongoose";
 import { dbConnect, isDatabaseConfigured } from "@/lib/db";
 import { CreatorProfile, type ICreatorProfile } from "@/models/CreatorProfile";
-import type { CreatorProfileDTO } from "@/types";
+import type { CreatorNiche, CreatorProfileDTO } from "@/types";
 import { isReservedUsername, type OnboardingInput } from "@/validators/creator.validator";
+import type { UpdateProfileSettingsInput } from "@/validators/settings.validator";
+import { AppError } from "@/lib/api-response";
 
 export async function getCreatorProfileByUserId(
   userId: string
@@ -128,5 +130,38 @@ export function toCreatorProfileDTO(profile: ICreatorProfile): CreatorProfileDTO
     createdAt: profile.createdAt.toISOString(),
     updatedAt: profile.updatedAt.toISOString(),
   };
+}
+
+export async function updateCreatorProfileSettings(
+  userId: string,
+  data: UpdateProfileSettingsInput
+): Promise<CreatorProfileDTO> {
+  if (!isDatabaseConfigured()) {
+    throw new AppError("Database not configured", 503, "DB_ERROR");
+  }
+  await dbConnect();
+
+  const profile = await CreatorProfile.findOne({
+    userId: new mongoose.Types.ObjectId(userId),
+  });
+
+  if (!profile) {
+    throw new AppError("Creator profile not found", 404, "NOT_FOUND");
+  }
+
+  profile.displayName = data.displayName.trim();
+  profile.bio = data.bio?.trim() || "";
+  if (data.avatarUrl !== undefined) {
+    profile.avatarUrl = data.avatarUrl.trim();
+  }
+  if (data.niche) {
+    profile.niche = data.niche as CreatorNiche;
+  }
+  if (data.socialLinks) {
+    profile.socialLinks = data.socialLinks;
+  }
+
+  await profile.save();
+  return toCreatorProfileDTO(profile);
 }
 

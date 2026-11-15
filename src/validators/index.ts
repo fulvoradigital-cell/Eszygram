@@ -9,3 +9,5 @@ export * from "./buyer.validator";
 export * from "./automation.validator";
 export * from "./analytics.validator";
 export * from "./customer.validator";
+export * from "./payout.validator";
+export * from "./settings.validator";

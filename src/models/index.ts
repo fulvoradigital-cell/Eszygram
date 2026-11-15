@@ -12,3 +12,5 @@ export { BuyerOtp, type IBuyerOtp } from "./BuyerOtp";
 export { CourseProgress, type ICourseProgress } from "./CourseProgress";
 export { AutomationRule, type IAutomationRule } from "./AutomationRule";
 export { AutomationLog, type IAutomationLog } from "./AutomationLog";
+export { PayoutAccount, type IPayoutAccount } from "./PayoutAccount";
+export { Payout, type IPayout } from "./Payout";

@@ -27,6 +27,13 @@ export function formatINR(
 }
 
 /**
+ * Formats an integer amount in paise into Indian Rupee currency display without paise symbol.
+ */
+export function formatPaiseToInr(paise: number): string {
+  return formatINR(paise);
+}
+
+/**
  * Extracts up to two uppercase initials from a display name for avatars.
  */
 export function getInitials(name?: string | null): string {

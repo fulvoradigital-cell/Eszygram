@@ -48,8 +48,15 @@ export function StorefrontBlock({ block, theme, username }: StorefrontBlockProps
     const priceInr = Number(data.priceInr) || 0;
     const description = (data.description as string) || "";
     const ctaText = (data.ctaText as string) || "Buy Now";
+    const slug = (data.slug as string) || "";
     const rawUrl = (data.url as string) || "#";
-    const href = rawUrl.startsWith("http") ? rawUrl : rawUrl !== "#" ? `https://${rawUrl}` : "#";
+    const href = slug
+      ? `/${username}/p/${slug}`
+      : rawUrl.startsWith("http")
+      ? rawUrl
+      : rawUrl !== "#"
+      ? `https://${rawUrl}`
+      : "#";
 
     return (
       <div
@@ -96,8 +103,15 @@ export function StorefrontBlock({ block, theme, username }: StorefrontBlockProps
     const description = (data.description as string) || "";
     const badge = (data.badge as string) || "Bestseller";
     const ctaText = (data.ctaText as string) || "Get Instant Access";
+    const slug = (data.slug as string) || "";
     const rawUrl = (data.url as string) || "#";
-    const href = rawUrl.startsWith("http") ? rawUrl : rawUrl !== "#" ? `https://${rawUrl}` : "#";
+    const href = slug
+      ? `/${username}/p/${slug}`
+      : rawUrl.startsWith("http")
+      ? rawUrl
+      : rawUrl !== "#"
+      ? `https://${rawUrl}`
+      : "#";
 
     return (
       <div

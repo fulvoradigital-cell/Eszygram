@@ -7,6 +7,7 @@ import type { DownloadToken, OrderDTO, OrderMetricsDTO, OrderStatus, PaymentMeth
 import type { CheckoutInitiateInput } from "@/validators/order.validator";
 import { createRazorpayOrder, verifyPaymentSignature } from "./razorpay.service";
 import { incrementCouponUses, validateAndApplyCoupon } from "./coupon.service";
+import { sendOrderConfirmationEmail } from "./email.service";
 import { AppError } from "@/lib/api-response";
 
 export function toOrderDTO(doc: IOrder): OrderDTO {
@@ -220,6 +221,16 @@ export async function initializeCheckout(
       await incrementCouponUses(pricing.couponId);
     }
 
+    // Trigger order confirmation email asynchronously
+    sendOrderConfirmationEmail({
+      email: order.buyerEmail,
+      buyerName: order.buyerName,
+      productTitle: order.productTitle,
+      amountInr: 0,
+      orderId: order._id.toString(),
+      invoiceNumber: order.invoiceNumber,
+    }).catch((err) => console.error("Order confirmation email failed:", err));
+
     return {
       orderId: order._id.toString(),
       isFree: true,
@@ -342,6 +353,16 @@ export async function verifyAndFulfillOrder({
     await Product.findByIdAndUpdate(product._id, { $inc: { salesCount: 1 } });
   }
 
+  // Trigger confirmation email asynchronously
+  sendOrderConfirmationEmail({
+    email: order.buyerEmail,
+    buyerName: order.buyerName,
+    productTitle: order.productTitle,
+    amountInr: Math.round(order.amountPaise / 100),
+    orderId: order._id.toString(),
+    invoiceNumber: order.invoiceNumber,
+  }).catch((err) => console.error("Order confirmation email failed:", err));
+
   return toOrderDTO(order);
 }
 
@@ -369,6 +390,16 @@ export async function fulfillOrderByRazorpayOrderId(
   if (product) {
     await Product.findByIdAndUpdate(product._id, { $inc: { salesCount: 1 } });
   }
+
+  // Trigger confirmation email asynchronously
+  sendOrderConfirmationEmail({
+    email: order.buyerEmail,
+    buyerName: order.buyerName,
+    productTitle: order.productTitle,
+    amountInr: Math.round(order.amountPaise / 100),
+    orderId: order._id.toString(),
+    invoiceNumber: order.invoiceNumber,
+  }).catch((err) => console.error("Order confirmation email failed:", err));
 
   return toOrderDTO(order);
 }

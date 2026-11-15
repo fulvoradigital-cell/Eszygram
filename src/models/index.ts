@@ -8,3 +8,5 @@ export { StoreEvent, type IStoreEvent } from "./StoreEvent";
 export { Product, type IProduct } from "./Product";
 export { Order, type IOrder } from "./Order";
 export { Coupon, type ICoupon } from "./Coupon";
+export { BuyerOtp, type IBuyerOtp } from "./BuyerOtp";
+export { CourseProgress, type ICourseProgress } from "./CourseProgress";

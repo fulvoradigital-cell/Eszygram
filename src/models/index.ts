@@ -6,3 +6,5 @@ export { Block, type IBlock } from "./Block";
 export { Lead, type ILead } from "./Lead";
 export { StoreEvent, type IStoreEvent } from "./StoreEvent";
 export { Product, type IProduct } from "./Product";
+export { Order, type IOrder } from "./Order";
+export { Coupon, type ICoupon } from "./Coupon";

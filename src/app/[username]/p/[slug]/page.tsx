@@ -29,6 +29,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ProductBuyActions } from "@/components/checkout/ProductBuyActions";
 import { getCreatorProfileByUsername } from "@/services/creator.service";
 import { getProductBySlug } from "@/services/product.service";
 import { formatPaiseToInr } from "@/lib/utils";
@@ -519,22 +520,15 @@ export default async function PublicProductPage({ params }: ProductPageProps) {
                 </div>
               )}
 
-              {/* Buy Button (Triggers checkout in Phase 5) */}
-              <div className="space-y-3">
-                <Button
-                  variant="gradient"
-                  size="lg"
-                  className="w-full text-sm font-bold shadow-lg shadow-brand-violet/25 py-3.5 h-auto"
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  <span>{ctaText}</span>
-                </Button>
-
-                <p className="text-[11px] text-center text-slate-muted flex items-center justify-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Secure 256-bit UPI &amp; Card Checkout</span>
-                </p>
-              </div>
+              {/* Interactive Checkout Actions (Desktop + Mobile) */}
+              <ProductBuyActions
+                product={product}
+                creatorDisplayName={profile.displayName}
+                ctaText={ctaText}
+                isOnSale={Boolean(isOnSale)}
+                priceInr={product.priceInr}
+                compareAtPriceInr={product.compareAtPriceInr}
+              />
 
               {/* Creator Card */}
               <div className="mt-6 pt-5 border-t border-slate-border">
@@ -568,35 +562,6 @@ export default async function PublicProductPage({ params }: ProductPageProps) {
           </div>
         </div>
       </main>
-
-      {/* Mobile Sticky Bottom Checkout Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-black/90 backdrop-blur-md border-t border-slate-border p-3.5 px-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] text-slate-muted uppercase font-bold tracking-wider">
-              Total
-            </p>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-lg font-extrabold text-navy font-display">
-                {product.priceInr === 0 ? "FREE" : `₹${product.priceInr}`}
-              </span>
-              {isOnSale && (
-                <span className="text-xs line-through text-slate-muted">
-                  ₹{product.compareAtPriceInr}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <Button
-            variant="gradient"
-            size="md"
-            className="flex-1 max-w-[240px] text-xs font-bold shadow-md shadow-brand-violet/25"
-          >
-            <span>{ctaText}</span>
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

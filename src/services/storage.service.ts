@@ -102,3 +102,5 @@ export async function generatePresignedDownloadUrl(
   // Local download fallback
   return `/api/storage/download/${encodeURIComponent(s3Key)}`;
 }
+
+export const getExpiringDownloadUrl = generatePresignedDownloadUrl;

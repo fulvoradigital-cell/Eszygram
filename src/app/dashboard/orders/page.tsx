@@ -1,44 +1,43 @@
-import Link from "next/link";
-import { ArrowLeft, ShoppingBag } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { requireAuthSession } from "@/lib/auth";
+import { getCreatorProfileByUserId } from "@/services/creator.service";
+import { getOrderMetrics, getOrdersByCreatorId } from "@/services/order.service";
+import { OrdersList } from "@/components/orders/OrdersList";
 
-export default function OrdersPage() {
+export const metadata: Metadata = {
+  title: "Orders & Sales | Ezsygram Creator Dashboard",
+  description: "Track customer checkouts, Razorpay UPI orders, and automated invoices.",
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function OrdersDashboardPage() {
+  const session = await requireAuthSession();
+
+  const profile = await getCreatorProfileByUserId(session.user.id);
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  const [{ orders }, metrics] = await Promise.all([
+    getOrdersByCreatorId(session.user.id),
+    getOrderMetrics(session.user.id),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-              Orders & Sales
-            </h1>
-            <Badge variant="brand" size="sm">Phase 5</Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-muted">
-            Track customer checkouts, Razorpay UPI orders, and automated invoices.
-          </p>
-        </div>
+    <div className="max-w-6xl mx-auto py-2 space-y-6">
+      <div>
+        <h1 className="text-xl sm:text-2xl font-extrabold text-navy font-display">
+          Orders &amp; Sales
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-muted mt-0.5">
+          View buyer purchases, UPI &amp; card transaction receipts, and net earnings.
+        </p>
       </div>
 
-      <Card className="p-8 sm:p-12 text-center border-slate-border">
-        <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-4">
-          <ShoppingBag className="w-7 h-7" />
-        </div>
-        <h2 className="text-lg font-bold text-navy font-display mb-2">
-          Order Processing & Razorpay Checkout
-        </h2>
-        <p className="text-sm text-slate-muted max-w-md mx-auto mb-6">
-          Phase 5 delivers guest checkout, server-calculated paise totals, Razorpay UPI/QR integration, webhook signature verification, and automated GST invoices.
-        </p>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard">
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </Card>
+      <OrdersList initialOrders={orders} metrics={metrics} />
     </div>
   );
 }
-

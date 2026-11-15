@@ -10,3 +10,5 @@ export { Order, type IOrder } from "./Order";
 export { Coupon, type ICoupon } from "./Coupon";
 export { BuyerOtp, type IBuyerOtp } from "./BuyerOtp";
 export { CourseProgress, type ICourseProgress } from "./CourseProgress";
+export { AutomationRule, type IAutomationRule } from "./AutomationRule";
+export { AutomationLog, type IAutomationLog } from "./AutomationLog";

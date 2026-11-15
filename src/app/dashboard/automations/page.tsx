@@ -1,44 +1,47 @@
-import Link from "next/link";
-import { ArrowLeft, Sparkles, Zap } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import React from "react";
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { requireAuthSession } from "@/lib/auth";
+import { getCreatorProfileByUserId } from "@/services/creator.service";
+import {
+  getAutomationLogs,
+  getAutomationRulesByCreatorId,
+} from "@/services/automation.service";
+import { getProductsByCreatorId } from "@/services/product.service";
+import { AutomationsManager } from "@/components/automations/AutomationsManager";
 
-export default function AutomationsPage() {
+export const metadata: Metadata = {
+  title: "Instagram Automation | Ezsygram Creator Dashboard",
+  description:
+    "Auto-reply to Instagram post comments and instantly DM product buy links, lead magnets, and coupons.",
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function AutomationsDashboardPage() {
+  const session = await requireAuthSession();
+
+  const profile = await getCreatorProfileByUserId(session.user.id);
+  if (!profile) {
+    redirect("/onboarding");
+  }
+
+  const [rules, logs, products] = await Promise.all([
+    getAutomationRulesByCreatorId(session.user.id),
+    getAutomationLogs(session.user.id, 50),
+    getProductsByCreatorId(session.user.id),
+  ]);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-xl sm:text-2xl font-extrabold text-navy font-display">
-              Instagram Automations
-            </h1>
-            <Badge variant="accent" size="sm">Phase 6</Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-muted">
-            Auto-reply to Instagram post comments and automatically DM product buy links.
-          </p>
-        </div>
-      </div>
-
-      <Card className="p-8 sm:p-12 text-center border-slate-border">
-        <div className="w-14 h-14 rounded-2xl bg-pink-500/10 text-pink-500 flex items-center justify-center mx-auto mb-4">
-          <Zap className="w-7 h-7" />
-        </div>
-        <h2 className="text-lg font-bold text-navy font-display mb-2">
-          Instagram Comment-to-DM Engine
-        </h2>
-        <p className="text-sm text-slate-muted max-w-md mx-auto mb-6">
-          Phase 6 connects your Instagram Business account via Meta Graph API, listens to live webhook comments, filters trigger keywords (e.g. &quot;LINK&quot; or &quot;COURSE&quot;), and instantly dispatches DM checkout cards.
-        </p>
-        <Button asChild variant="outline" size="sm">
-          <Link href="/dashboard">
-            <ArrowLeft className="w-4 h-4 mr-1.5" />
-            Back to Dashboard
-          </Link>
-        </Button>
-      </Card>
+    <div className="max-w-6xl mx-auto py-2 space-y-6">
+      <AutomationsManager
+        initialRules={rules}
+        initialLogs={logs}
+        products={products}
+        creatorDisplayName={profile.displayName || profile.username}
+        username={profile.username}
+        avatarUrl={profile.avatarUrl}
+      />
     </div>
   );
 }
-

@@ -17,6 +17,7 @@ const nextConfig = {
     ],
   },
   poweredByHeader: false,
+  staticPageGenerationTimeout: 120,
 };
 
 export default nextConfig;

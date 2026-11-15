@@ -6,3 +6,4 @@ export * from "./store.validator";
 export * from "./product.validator";
 export * from "./order.validator";
 export * from "./buyer.validator";
+export * from "./automation.validator";

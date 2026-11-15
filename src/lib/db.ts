@@ -34,7 +34,7 @@ export function isDatabaseConfigured(): boolean {
  * Establishes and caches a singleton Mongoose connection safe for serverless functions.
  */
 export async function dbConnect(): Promise<typeof mongoose> {
-  const uri = process.env.MONGODB_URI;
+  let uri = process.env.MONGODB_URI;
 
   if (!uri || uri.trim().length === 0) {
     throw new AppError(
@@ -42,6 +42,11 @@ export async function dbConnect(): Promise<typeof mongoose> {
       503,
       "DATABASE_NOT_CONFIGURED"
     );
+  }
+
+  // On Windows / Node 18+, 'localhost' attempts IPv6 ::1 first which can hang if MongoDB only listens on IPv4
+  if (uri.includes("localhost")) {
+    uri = uri.replace("localhost", "127.0.0.1");
   }
 
   if (cached.conn) {

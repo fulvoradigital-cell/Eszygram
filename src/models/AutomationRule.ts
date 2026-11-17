@@ -106,5 +106,5 @@ const AutomationRuleSchema = new Schema<IAutomationRule>(
 AutomationRuleSchema.index({ creatorId: 1, isActive: 1 });
 
 export const AutomationRule: Model<IAutomationRule> =
-  mongoose.models.AutomationRule ||
+  (mongoose.models?.AutomationRule as Model<IAutomationRule>) ||
   mongoose.model<IAutomationRule>("AutomationRule", AutomationRuleSchema);

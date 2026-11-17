@@ -75,5 +75,5 @@ const AutomationLogSchema = new Schema<IAutomationLog>(
 AutomationLogSchema.index({ creatorId: 1, createdAt: -1 });
 
 export const AutomationLog: Model<IAutomationLog> =
-  mongoose.models.AutomationLog ||
+  (mongoose.models?.AutomationLog as Model<IAutomationLog>) ||
   mongoose.model<IAutomationLog>("AutomationLog", AutomationLogSchema);

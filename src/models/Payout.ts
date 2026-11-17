@@ -71,5 +71,5 @@ const PayoutSchema = new Schema<IPayout>(
 PayoutSchema.index({ creatorId: 1, createdAt: -1 });
 
 export const Payout: Model<IPayout> =
-  (mongoose.models.Payout as Model<IPayout>) ||
+  (mongoose.models?.Payout as Model<IPayout>) ||
   mongoose.model<IPayout>("Payout", PayoutSchema);

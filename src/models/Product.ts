@@ -213,5 +213,5 @@ ProductSchema.index({ creatorId: 1, slug: 1 }, { unique: true });
 ProductSchema.index({ creatorId: 1, type: 1, isActive: 1 });
 
 export const Product: Model<IProduct> =
-  (mongoose.models.Product as Model<IProduct>) ||
+  (mongoose.models?.Product as Model<IProduct>) ||
   mongoose.model<IProduct>("Product", ProductSchema);

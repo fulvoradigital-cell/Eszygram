@@ -35,7 +35,7 @@ const PasswordResetTokenSchema = new Schema<IPasswordResetToken>(
 );
 
 export const PasswordResetToken: Model<IPasswordResetToken> =
-  (mongoose.models.PasswordResetToken as Model<IPasswordResetToken>) ||
+  (mongoose.models?.PasswordResetToken as Model<IPasswordResetToken>) ||
   mongoose.model<IPasswordResetToken>(
     "PasswordResetToken",
     PasswordResetTokenSchema

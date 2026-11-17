@@ -58,6 +58,6 @@ const ContactMessageSchema = new Schema<IContactMessage>(
 );
 
 export const ContactMessage: Model<IContactMessage> =
-  (mongoose.models.ContactMessage as Model<IContactMessage>) ||
+  (mongoose.models?.ContactMessage as Model<IContactMessage>) ||
   mongoose.model<IContactMessage>("ContactMessage", ContactMessageSchema);
 

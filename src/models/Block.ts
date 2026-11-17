@@ -72,5 +72,5 @@ const BlockSchema = new Schema<IBlock>(
 BlockSchema.index({ userId: 1, order: 1 });
 
 export const Block: Model<IBlock> =
-  (mongoose.models.Block as Model<IBlock>) ||
+  (mongoose.models?.Block as Model<IBlock>) ||
   mongoose.model<IBlock>("Block", BlockSchema);

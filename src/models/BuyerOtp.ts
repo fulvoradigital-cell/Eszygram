@@ -39,4 +39,5 @@ const BuyerOtpSchema = new Schema<IBuyerOtp>(
 );
 
 export const BuyerOtp: Model<IBuyerOtp> =
-  mongoose.models.BuyerOtp || mongoose.model<IBuyerOtp>("BuyerOtp", BuyerOtpSchema);
+  (mongoose.models?.BuyerOtp as Model<IBuyerOtp>) ||
+  mongoose.model<IBuyerOtp>("BuyerOtp", BuyerOtpSchema);

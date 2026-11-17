@@ -73,4 +73,4 @@ const CouponSchema = new Schema<ICoupon>(
 CouponSchema.index({ creatorId: 1, code: 1 }, { unique: true });
 
 export const Coupon: Model<ICoupon> =
-  mongoose.models.Coupon || mongoose.model<ICoupon>("Coupon", CouponSchema);
+  (mongoose.models?.Coupon as Model<ICoupon>) || mongoose.model<ICoupon>("Coupon", CouponSchema);

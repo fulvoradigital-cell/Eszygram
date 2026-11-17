@@ -60,5 +60,5 @@ const LeadSchema = new Schema<ILead>(
 LeadSchema.index({ creatorId: 1, createdAt: -1 });
 
 export const Lead: Model<ILead> =
-  (mongoose.models.Lead as Model<ILead>) ||
+  (mongoose.models?.Lead as Model<ILead>) ||
   mongoose.model<ILead>("Lead", LeadSchema);

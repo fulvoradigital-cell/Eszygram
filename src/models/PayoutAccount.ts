@@ -98,5 +98,5 @@ const PayoutAccountSchema = new Schema<IPayoutAccount>(
 );
 
 export const PayoutAccount: Model<IPayoutAccount> =
-  (mongoose.models.PayoutAccount as Model<IPayoutAccount>) ||
+  (mongoose.models?.PayoutAccount as Model<IPayoutAccount>) ||
   mongoose.model<IPayoutAccount>("PayoutAccount", PayoutAccountSchema);

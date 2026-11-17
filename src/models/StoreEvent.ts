@@ -52,5 +52,5 @@ const StoreEventSchema = new Schema<IStoreEvent>(
 StoreEventSchema.index({ creatorId: 1, type: 1, createdAt: -1 });
 
 export const StoreEvent: Model<IStoreEvent> =
-  (mongoose.models.StoreEvent as Model<IStoreEvent>) ||
+  (mongoose.models?.StoreEvent as Model<IStoreEvent>) ||
   mongoose.model<IStoreEvent>("StoreEvent", StoreEventSchema);

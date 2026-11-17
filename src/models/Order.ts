@@ -181,4 +181,4 @@ OrderSchema.index({ creatorId: 1, status: 1 });
 OrderSchema.index({ buyerEmail: 1, createdAt: -1 });
 
 export const Order: Model<IOrder> =
-  mongoose.models.Order || mongoose.model<IOrder>("Order", OrderSchema);
+  (mongoose.models?.Order as Model<IOrder>) || mongoose.model<IOrder>("Order", OrderSchema);

@@ -43,5 +43,5 @@ const CourseProgressSchema = new Schema<ICourseProgress>(
 CourseProgressSchema.index({ buyerEmail: 1, productId: 1 }, { unique: true });
 
 export const CourseProgress: Model<ICourseProgress> =
-  mongoose.models.CourseProgress ||
+  (mongoose.models?.CourseProgress as Model<ICourseProgress>) ||
   mongoose.model<ICourseProgress>("CourseProgress", CourseProgressSchema);

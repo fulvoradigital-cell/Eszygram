@@ -153,6 +153,6 @@ const CreatorProfileSchema = new Schema<ICreatorProfile>(
 );
 
 export const CreatorProfile: Model<ICreatorProfile> =
-  (mongoose.models.CreatorProfile as Model<ICreatorProfile>) ||
+  (mongoose.models?.CreatorProfile as Model<ICreatorProfile>) ||
   mongoose.model<ICreatorProfile>("CreatorProfile", CreatorProfileSchema);
 

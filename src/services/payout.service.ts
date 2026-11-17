@@ -22,43 +22,61 @@ function maskPanNumber(pan?: string): string {
 }
 
 export function toPayoutAccountDTO(doc: IPayoutAccount): PayoutAccountDTO {
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const method = plain.payoutMethod as PayoutAccountDTO["payoutMethod"];
+
   return {
-    id: doc._id.toString(),
-    creatorId: doc.creatorId.toString(),
-    payoutMethod: doc.payoutMethod,
+    id: (plain._id || doc._id).toString(),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    payoutMethod: method,
     bankAccount:
-      doc.payoutMethod === "bank_account" && doc.accountHolderName
+      method === "bank_account" && plain.accountHolderName
         ? {
-            accountHolderName: doc.accountHolderName,
-            accountNumberMasked: maskAccountNumber(doc.accountNumber),
-            ifscCode: doc.ifscCode || "",
-            bankName: doc.bankName || "Bank Account",
-            accountType: doc.accountType || "savings",
+            accountHolderName: String(plain.accountHolderName),
+            accountNumberMasked: maskAccountNumber(plain.accountNumber as string | undefined),
+            ifscCode: String(plain.ifscCode || ""),
+            bankName: String(plain.bankName || "Bank Account"),
+            accountType: (plain.accountType as "savings" | "current") || "savings",
           }
         : undefined,
-    upiVpa: doc.payoutMethod === "upi" ? doc.upiVpa : undefined,
-    panNumberMasked: doc.panNumber ? maskPanNumber(doc.panNumber) : undefined,
-    gstin: doc.gstin,
-    isVerified: doc.isVerified,
-    autoPayoutEnabled: doc.autoPayoutEnabled,
-    minimumPayoutInr: Math.round(doc.minimumPayoutPaise / 100),
+    upiVpa: method === "upi" && plain.upiVpa ? String(plain.upiVpa) : undefined,
+    panNumberMasked: plain.panNumber ? maskPanNumber(plain.panNumber as string) : undefined,
+    gstin: plain.gstin ? String(plain.gstin) : undefined,
+    isVerified: Boolean(plain.isVerified),
+    autoPayoutEnabled: Boolean(plain.autoPayoutEnabled),
+    minimumPayoutInr: Math.round(Number(plain.minimumPayoutPaise || 0) / 100),
   };
 }
 
 export function toPayoutDTO(doc: IPayout): PayoutDTO {
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const amountPaise = Number(plain.amountPaise || 0);
+
   return {
-    id: doc._id.toString(),
-    payoutNumber: doc.payoutNumber,
-    creatorId: doc.creatorId.toString(),
-    amountPaise: doc.amountPaise,
-    amountInr: Math.round(doc.amountPaise / 100),
-    destinationType: doc.destinationType,
-    destinationSummary: doc.destinationSummary,
-    status: doc.status,
-    utr: doc.utr,
-    failureReason: doc.failureReason,
-    settledAt: doc.settledAt?.toISOString(),
-    createdAt: doc.createdAt.toISOString(),
+    id: (plain._id || doc._id).toString(),
+    payoutNumber: String(plain.payoutNumber || ""),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    amountPaise,
+    amountInr: Math.round(amountPaise / 100),
+    destinationType: plain.destinationType as PayoutDTO["destinationType"],
+    destinationSummary: String(plain.destinationSummary || ""),
+    status: plain.status as PayoutDTO["status"],
+    utr: plain.utr ? String(plain.utr) : undefined,
+    failureReason: plain.failureReason ? String(plain.failureReason) : undefined,
+    settledAt: plain.settledAt
+      ? new Date(plain.settledAt as string | number | Date).toISOString()
+      : undefined,
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

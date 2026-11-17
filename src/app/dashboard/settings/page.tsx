@@ -1,7 +1,7 @@
 import React from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { requireAuthSession } from "@/lib/auth";
+import { getAuthSession } from "@/lib/auth";
 import {
   getCreatorProfileByUserId,
   toCreatorProfileDTO,
@@ -16,7 +16,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function SettingsDashboardPage() {
-  const session = await requireAuthSession();
+  const session = await getAuthSession();
+  if (!session?.user?.id) {
+    redirect("/auth/login?callbackUrl=/dashboard/settings");
+  }
 
   const profile = await getCreatorProfileByUserId(session.user.id);
   if (!profile) {

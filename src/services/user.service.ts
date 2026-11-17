@@ -8,16 +8,25 @@ import type { RegisterInput } from "@/validators";
 const BCRYPT_ROUNDS = 12;
 
 export function toPublicUserDTO(user: IUser): PublicUserDTO {
+  const plain =
+    typeof (user as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (user as { toObject: () => Record<string, unknown> }).toObject()
+      : (user as unknown as Record<string, unknown>);
+
   return {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    plan: user.plan,
-    planExpiresAt: user.planExpiresAt ? user.planExpiresAt.toISOString() : null,
-    status: user.status,
-    avatarUrl: user.avatarUrl,
-    createdAt: user.createdAt.toISOString(),
+    id: (plain._id || user._id).toString(),
+    name: String(plain.name || ""),
+    email: String(plain.email || ""),
+    role: plain.role as PublicUserDTO["role"],
+    plan: plain.plan as PublicUserDTO["plan"],
+    planExpiresAt: plain.planExpiresAt
+      ? new Date(plain.planExpiresAt as string | number | Date).toISOString()
+      : null,
+    status: plain.status as PublicUserDTO["status"],
+    avatarUrl: plain.avatarUrl ? String(plain.avatarUrl) : undefined,
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

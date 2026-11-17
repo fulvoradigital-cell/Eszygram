@@ -81,10 +81,10 @@ export function SortableBlockList({
           onClick={onOpenAddModal}
           variant="primary"
           size="sm"
-          className="shadow-brand"
+          className="shadow-brand gap-1.5"
         >
-          <Plus className="w-4 h-4 mr-1.5" />
-          Add First Block
+          <Plus className="w-4 h-4 shrink-0" />
+          <span>Add First Block</span>
         </Button>
       </div>
     );

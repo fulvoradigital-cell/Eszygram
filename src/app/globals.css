@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --bg-canvas: #FAFAFB;
-    --bg-surface: #FFFFFF;
-    --bg-subtle: #F1F5F9;
-    --text-primary: #0F172A;
-    --text-secondary: #475569;
-    --border-subtle: #E2E8F0;
-    --brand-violet: #6D28D9;
-    --brand-indigo: #4F46E5;
-    --accent-coral: #FF7A59;
-    --success-mint: #10B981;
+    --bg-canvas: 250 250 251;
+    --bg-surface: 255 255 255;
+    --bg-subtle: 241 245 249;
+    --text-primary: 15 23 42;
+    --text-secondary: 71 85 105;
+    --border-subtle: 226 232 240;
+    --brand-violet: 109 40 217;
+    --brand-indigo: 79 70 229;
+    --accent-coral: 255 122 89;
+    --success-mint: 16 185 129;
   }
 
   .dark {
-    --bg-canvas: #0B0B1A;
-    --bg-surface: #13132B;
-    --bg-subtle: #1A1A38;
-    --text-primary: #F8FAFC;
-    --text-secondary: #94A3B8;
-    --border-subtle: #232346;
+    --bg-canvas: 11 11 26;
+    --bg-surface: 19 19 43;
+    --bg-subtle: 26 26 56;
+    --text-primary: 248 250 252;
+    --text-secondary: 148 163 184;
+    --border-subtle: 35 35 70;
   }
 
   html {
@@ -31,8 +31,8 @@
   }
 
   body {
-    background-color: var(--bg-canvas);
-    color: var(--text-primary);
+    background-color: rgb(var(--bg-canvas));
+    color: rgb(var(--text-primary));
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
   }

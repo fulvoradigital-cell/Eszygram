@@ -251,8 +251,8 @@ export function ProductList({
                 onClick={onCreateNew}
                 className="gap-2 shadow-md shadow-brand-violet/20"
               >
-                <Plus className="w-4 h-4" />
-                Create First Product
+                <Plus className="w-4 h-4 shrink-0" />
+                <span>Create First Product</span>
               </Button>
             </>
           ) : (

@@ -5,22 +5,32 @@ import type { CouponDTO } from "@/types";
 import type { CreateCouponInput } from "@/validators/order.validator";
 
 export function toCouponDTO(doc: ICoupon): CouponDTO {
-  const minOrderAmountPaise = doc.minOrderAmountPaise || 0;
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const minOrderAmountPaise = Number(plain.minOrderAmountPaise || 0);
   const minOrderAmountInr = Math.round(minOrderAmountPaise / 100);
+  const val = Number(plain.value || 0);
 
   return {
-    id: doc._id.toString(),
-    creatorId: doc.creatorId.toString(),
-    code: doc.code,
-    type: doc.type,
-    value: doc.type === "fixed" ? Math.round(doc.value / 100) : doc.value,
+    id: (plain._id || doc._id).toString(),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    code: String(plain.code || ""),
+    type: plain.type as CouponDTO["type"],
+    value: plain.type === "fixed" ? Math.round(val / 100) : val,
     minOrderAmountPaise,
     minOrderAmountInr,
-    maxUses: doc.maxUses ?? null,
-    usedCount: doc.usedCount || 0,
-    expiresAt: doc.expiresAt ? doc.expiresAt.toISOString() : null,
-    isActive: doc.isActive,
-    createdAt: doc.createdAt.toISOString(),
+    maxUses: plain.maxUses !== undefined && plain.maxUses !== null ? Number(plain.maxUses) : null,
+    usedCount: Number(plain.usedCount || 0),
+    expiresAt: plain.expiresAt
+      ? new Date(plain.expiresAt as string | number | Date).toISOString()
+      : null,
+    isActive: Boolean(plain.isActive),
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

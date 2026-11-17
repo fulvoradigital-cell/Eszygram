@@ -286,10 +286,10 @@ export function StoreBuilder({ initialProfile, initialBlocks }: StoreBuilderProp
                   onClick={() => setIsAddModalOpen(true)}
                   variant="primary"
                   size="sm"
-                  className="shadow-brand text-xs"
+                  className="shadow-brand text-xs gap-1.5"
                 >
-                  <Plus className="w-3.5 h-3.5 mr-1" />
-                  Add Block
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span>Add Block</span>
                 </Button>
               </div>
 

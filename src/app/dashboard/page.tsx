@@ -179,9 +179,9 @@ export default async function DashboardPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-slate-border">
               <Button asChild size="sm" variant="default" className="w-full bg-brand-violet hover:bg-brand-violet/90 text-white text-xs font-semibold">
-                <Link href="/dashboard/products">
-                  <Plus className="w-3.5 h-3.5 mr-1.5" />
-                  Create Product
+                <Link href="/dashboard/products" className="inline-flex items-center justify-center gap-1.5">
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <span>Create Product</span>
                 </Link>
               </Button>
             </div>
@@ -201,9 +201,9 @@ export default async function DashboardPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-slate-border">
               <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold">
-                <Link href="/dashboard/store">
-                  Customize Store
-                  <ArrowUpRight className="w-3.5 h-3.5 ml-1.5" />
+                <Link href="/dashboard/store" className="inline-flex items-center justify-center gap-1.5">
+                  <span>Customize Store</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
                 </Link>
               </Button>
             </div>
@@ -223,9 +223,9 @@ export default async function DashboardPage() {
             </div>
             <div className="mt-4 pt-4 border-t border-slate-border">
               <Button asChild size="sm" variant="outline" className="w-full text-xs font-semibold">
-                <Link href="/dashboard/automations">
-                  Set Up Trigger
-                  <ArrowUpRight className="w-3.5 h-3.5 ml-1.5" />
+                <Link href="/dashboard/automations" className="inline-flex items-center justify-center gap-1.5">
+                  <span>Set Up Trigger</span>
+                  <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
                 </Link>
               </Button>
             </div>

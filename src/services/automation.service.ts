@@ -18,44 +18,63 @@ export function toAutomationRuleDTO(
   doc: IAutomationRule,
   productTitle?: string
 ): AutomationRuleDTO {
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const keywordsRaw = Array.isArray(plain.keywords) ? plain.keywords : [];
+  const commentRepliesRaw = Array.isArray(plain.commentReplies) ? plain.commentReplies : [];
+
   return {
-    id: doc._id.toString(),
-    creatorId: doc.creatorId.toString(),
-    name: doc.name,
-    triggerType: doc.triggerType,
-    keywords: doc.keywords,
-    matchingType: doc.matchingType,
-    actionType: doc.actionType,
-    dmMessage: doc.dmMessage,
-    dmButtonText: doc.dmButtonText,
-    dmButtonUrl: doc.dmButtonUrl,
-    commentReplies: doc.commentReplies || [],
-    targetPostId: doc.targetPostId,
-    linkedProductId: doc.linkedProductId?.toString(),
+    id: (plain._id || doc._id).toString(),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    name: String(plain.name || ""),
+    triggerType: plain.triggerType as AutomationRuleDTO["triggerType"],
+    keywords: keywordsRaw.map(String),
+    matchingType: plain.matchingType as AutomationRuleDTO["matchingType"],
+    actionType: plain.actionType as AutomationRuleDTO["actionType"],
+    dmMessage: String(plain.dmMessage || ""),
+    dmButtonText: plain.dmButtonText ? String(plain.dmButtonText) : undefined,
+    dmButtonUrl: plain.dmButtonUrl ? String(plain.dmButtonUrl) : undefined,
+    commentReplies: commentRepliesRaw.map(String),
+    targetPostId: plain.targetPostId ? String(plain.targetPostId) : undefined,
+    linkedProductId: plain.linkedProductId ? String(plain.linkedProductId) : undefined,
     linkedProductTitle: productTitle,
-    totalTriggered: doc.totalTriggered || 0,
-    totalDmsSent: doc.totalDmsSent || 0,
-    isActive: doc.isActive,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
+    totalTriggered: Number(plain.totalTriggered || 0),
+    totalDmsSent: Number(plain.totalDmsSent || 0),
+    isActive: Boolean(plain.isActive),
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: plain.updatedAt
+      ? new Date(plain.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 
 export function toAutomationLogDTO(doc: IAutomationLog): AutomationLogDTO {
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
   return {
-    id: doc._id.toString(),
-    creatorId: doc.creatorId.toString(),
-    ruleId: doc.ruleId.toString(),
-    ruleName: doc.ruleName,
-    triggerType: doc.triggerType,
-    instagramUserId: doc.instagramUserId,
-    instagramUsername: doc.instagramUsername,
-    commentText: doc.commentText,
-    dmSentText: doc.dmSentText,
-    publicReplySent: doc.publicReplySent,
-    status: doc.status,
-    error: doc.error,
-    createdAt: doc.createdAt.toISOString(),
+    id: (plain._id || doc._id).toString(),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    ruleId: (plain.ruleId || doc.ruleId).toString(),
+    ruleName: String(plain.ruleName || ""),
+    triggerType: plain.triggerType as AutomationLogDTO["triggerType"],
+    instagramUserId: plain.instagramUserId ? String(plain.instagramUserId) : undefined,
+    instagramUsername: String(plain.instagramUsername || ""),
+    commentText: String(plain.commentText || ""),
+    dmSentText: String(plain.dmSentText || ""),
+    publicReplySent: plain.publicReplySent ? String(plain.publicReplySent) : undefined,
+    status: plain.status as AutomationLogDTO["status"],
+    error: plain.error ? String(plain.error) : undefined,
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

@@ -11,44 +11,63 @@ import { sendOrderConfirmationEmail } from "./email.service";
 import { AppError } from "@/lib/api-response";
 
 export function toOrderDTO(doc: IOrder): OrderDTO {
-  const amountPaise = doc.amountPaise;
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const amountPaise = Number(plain.amountPaise || 0);
   const amountInr = Math.round(amountPaise / 100);
+  const downloadTokensRaw = Array.isArray(plain.downloadTokens) ? plain.downloadTokens : [];
 
   return {
-    id: doc._id.toString(),
-    invoiceNumber: doc.invoiceNumber,
-    creatorId: doc.creatorId.toString(),
-    productId: doc.productId.toString(),
-    productTitle: doc.productTitle,
-    productType: doc.productType,
-    productCoverImage: doc.productCoverImage || "",
-    buyerName: doc.buyerName,
-    buyerEmail: doc.buyerEmail,
-    buyerPhone: doc.buyerPhone,
+    id: (plain._id || doc._id).toString(),
+    invoiceNumber: String(plain.invoiceNumber || ""),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    productId: (plain.productId || doc.productId).toString(),
+    productTitle: String(plain.productTitle || ""),
+    productType: plain.productType as OrderDTO["productType"],
+    productCoverImage: String(plain.productCoverImage || ""),
+    buyerName: String(plain.buyerName || ""),
+    buyerEmail: String(plain.buyerEmail || ""),
+    buyerPhone: String(plain.buyerPhone || ""),
     amountPaise,
     amountInr,
-    basePricePaise: doc.basePricePaise,
-    discountAmountPaise: doc.discountAmountPaise || 0,
-    orderBumpIncluded: doc.orderBumpIncluded,
-    orderBumpProductId: doc.orderBumpProductId?.toString(),
-    orderBumpPricePaise: doc.orderBumpPricePaise || 0,
-    platformFeePaise: doc.platformFeePaise || 0,
-    creatorEarningsPaise: doc.creatorEarningsPaise || 0,
-    couponCode: doc.couponCode,
-    status: doc.status,
-    paymentMethod: doc.paymentMethod,
-    razorpayOrderId: doc.razorpayOrderId,
-    razorpayPaymentId: doc.razorpayPaymentId,
-    downloadTokens: doc.downloadTokens || [],
-    customAnswers: doc.customAnswers
-      ? Object.fromEntries(
-          doc.customAnswers instanceof Map
-            ? doc.customAnswers.entries()
-            : Object.entries(doc.customAnswers)
-        )
+    basePricePaise: Number(plain.basePricePaise || 0),
+    discountAmountPaise: Number(plain.discountAmountPaise || 0),
+    orderBumpIncluded: Boolean(plain.orderBumpIncluded),
+    orderBumpProductId: plain.orderBumpProductId ? String(plain.orderBumpProductId) : undefined,
+    orderBumpPricePaise: Number(plain.orderBumpPricePaise || 0),
+    platformFeePaise: Number(plain.platformFeePaise || 0),
+    creatorEarningsPaise: Number(plain.creatorEarningsPaise || 0),
+    couponCode: plain.couponCode ? String(plain.couponCode) : undefined,
+    status: plain.status as OrderDTO["status"],
+    paymentMethod: (plain.paymentMethod as OrderDTO["paymentMethod"]) || "upi",
+    razorpayOrderId: plain.razorpayOrderId ? String(plain.razorpayOrderId) : undefined,
+    razorpayPaymentId: plain.razorpayPaymentId ? String(plain.razorpayPaymentId) : undefined,
+    downloadTokens: downloadTokensRaw.map((t: unknown) => {
+      const token = (t as Record<string, unknown>) || {};
+      return {
+        token: String(token.token || ""),
+        productId: String(token.productId || plain.productId || doc.productId || ""),
+        fileId: String(token.fileId || ""),
+        fileName: String(token.fileName || ""),
+        expiresAt: token.expiresAt
+          ? new Date(token.expiresAt as string | number | Date).toISOString()
+          : new Date().toISOString(),
+        downloadCount: Number(token.downloadCount || 0),
+        maxDownloads: Number(token.maxDownloads || 5),
+      };
+    }),
+    customAnswers: plain.customAnswers
+      ? JSON.parse(JSON.stringify(plain.customAnswers))
       : undefined,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: plain.updatedAt
+      ? new Date(plain.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

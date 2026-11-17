@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import { dbConnect, isDatabaseConfigured } from "@/lib/db";
 import { CreatorProfile, type ICreatorProfile } from "@/models/CreatorProfile";
-import type { CreatorNiche, CreatorProfileDTO } from "@/types";
+import type { CreatorNiche, CreatorProfileDTO, SocialLink } from "@/types";
 import { isReservedUsername, type OnboardingInput } from "@/validators/creator.validator";
 import type { UpdateProfileSettingsInput } from "@/validators/settings.validator";
 import { AppError } from "@/lib/api-response";
@@ -106,29 +106,50 @@ export async function upsertCreatorOnboarding(
 }
 
 export function toCreatorProfileDTO(profile: ICreatorProfile): CreatorProfileDTO {
+  const plain =
+    typeof (profile as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (profile as { toObject: () => Record<string, unknown> }).toObject()
+      : (profile as unknown as Record<string, unknown>);
+
+  const socialLinksRaw = Array.isArray(plain.socialLinks) ? plain.socialLinks : [];
+  const themeRaw = (plain.theme as Record<string, unknown>) || {};
+  const seoRaw = (plain.seo as Record<string, unknown>) || {};
+
   return {
-    id: profile._id.toString(),
-    userId: profile.userId.toString(),
-    username: profile.username,
-    displayName: profile.displayName,
-    bio: profile.bio || "",
-    avatarUrl: profile.avatarUrl || "",
-    niche: profile.niche,
-    socialLinks: profile.socialLinks || [],
-    theme: profile.theme || {
-      preset: "modern-violet",
-      primaryColor: "#6D28D9",
-      backgroundColor: "#FAFAFB",
-      font: "Inter",
+    id: (plain._id || profile._id).toString(),
+    userId: (plain.userId || profile.userId).toString(),
+    username: String(plain.username || ""),
+    displayName: String(plain.displayName || ""),
+    bio: String(plain.bio || ""),
+    avatarUrl: String(plain.avatarUrl || ""),
+    niche: (plain.niche as CreatorNiche) || "other",
+    socialLinks: socialLinksRaw.map((s: unknown) => {
+      const item = (s as Record<string, unknown>) || {};
+      return {
+        platform: item.platform as SocialLink["platform"],
+        url: String(item.url || ""),
+      };
+    }),
+    theme: {
+      preset: String(themeRaw.preset || "modern-violet"),
+      primaryColor: String(themeRaw.primaryColor || "#6D28D9"),
+      backgroundColor: String(themeRaw.backgroundColor || "#FAFAFB"),
+      font: String(themeRaw.font || "Inter"),
+      buttonRadius: String(themeRaw.buttonRadius || "rounded-xl"),
+      cardStyle: (themeRaw.cardStyle as "glass" | "solid" | "bordered") || "solid",
     },
-    seo: profile.seo || {
-      metaTitle: "",
-      metaDescription: "",
-      ogImage: "",
+    seo: {
+      metaTitle: String(seoRaw.metaTitle || ""),
+      metaDescription: String(seoRaw.metaDescription || ""),
+      ogImage: String(seoRaw.ogImage || ""),
     },
-    onboardingCompleted: profile.onboardingCompleted,
-    createdAt: profile.createdAt.toISOString(),
-    updatedAt: profile.updatedAt.toISOString(),
+    onboardingCompleted: Boolean(plain.onboardingCompleted),
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: plain.updatedAt
+      ? new Date(plain.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

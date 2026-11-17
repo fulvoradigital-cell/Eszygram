@@ -43,11 +43,20 @@ const config: Config = {
           700: "#047857",
         },
         canvas: {
+          DEFAULT: "rgb(var(--bg-canvas) / <alpha-value>)",
           light: "#FAFAFB",
           dark: "#0B0B1A",
           darkCard: "#13132B",
           darkBorder: "#232346",
         },
+        card: "rgb(var(--bg-surface) / <alpha-value>)",
+        "slate-subtle": "rgb(var(--bg-subtle) / <alpha-value>)",
+        "slate-text": "rgb(var(--text-primary) / <alpha-value>)",
+        "slate-muted": "rgb(var(--text-secondary) / <alpha-value>)",
+        "slate-border": "rgb(var(--border-subtle) / <alpha-value>)",
+        "brand-violet": "rgb(var(--brand-violet) / <alpha-value>)",
+        "brand-indigo": "rgb(var(--brand-indigo) / <alpha-value>)",
+        navy: "rgb(var(--text-primary) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "system-ui", "sans-serif"],
@@ -73,6 +82,7 @@ const config: Config = {
         elevated: "0 20px 50px -12px rgba(15, 23, 42, 0.14), 0 4px 16px -4px rgba(15, 23, 42, 0.06)",
         glow: "0 12px 32px -6px rgba(109, 40, 217, 0.35), 0 4px 12px -2px rgba(79, 70, 229, 0.22)",
         "glow-coral": "0 12px 28px -6px rgba(255, 122, 89, 0.35)",
+        brand: "0 10px 30px -8px rgba(109, 40, 217, 0.45)",
       },
       backgroundImage: {
         "brand-gradient": "linear-gradient(135deg, #6D28D9 0%, #4F46E5 100%)",

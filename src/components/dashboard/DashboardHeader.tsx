@@ -24,7 +24,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ username }: DashboardHeaderProps) {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -70,8 +70,8 @@ export function DashboardHeader({ username }: DashboardHeaderProps) {
             size="sm"
             className="h-9 px-3 text-xs font-semibold flex items-center gap-1.5 border-brand-violet/30 text-brand-violet hover:bg-brand-violet/10"
           >
-            <Link href={storeUrl} target={username ? "_blank" : undefined}>
-              <ExternalLink className="w-3.5 h-3.5" />
+            <Link href={storeUrl} target={username ? "_blank" : undefined} className="inline-flex items-center gap-1.5">
+              <ExternalLink className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">View Live Store</span>
               <span className="sm:hidden">Store</span>
             </Link>

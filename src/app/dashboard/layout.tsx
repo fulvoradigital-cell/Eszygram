@@ -23,8 +23,8 @@ export default async function DashboardLayout({
 
   const profile = await getCreatorProfileByUserId(session.user.id);
 
-  // If user hasn't completed onboarding yet, redirect to onboarding wizard
-  if (!profile || !profile.onboardingCompleted) {
+  // If creator profile doesn't exist yet, redirect to onboarding wizard
+  if (!profile) {
     redirect("/onboarding");
   }
 

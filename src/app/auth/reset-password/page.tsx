@@ -15,7 +15,7 @@ function TokenReader({
   onToken: (t: string) => void;
 }) {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams?.get("token") || "";
 
   useEffect(() => {
     if (token) {

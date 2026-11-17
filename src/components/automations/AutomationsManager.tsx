@@ -208,7 +208,7 @@ export function AutomationsManager({
           }}
           className="gap-2 shadow-md shadow-brand-violet/20 w-full sm:w-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 shrink-0" />
           <span>New Automation</span>
         </Button>
       </div>
@@ -225,7 +225,7 @@ export function AutomationsManager({
 
         <Card className="p-4 border-slate-border bg-card">
           <p className="text-xs font-medium text-slate-muted">Active Rules</p>
-          <p className="text-2xl font-extrabold text-emerald-600 font-display mt-0.5">
+          <p className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-display mt-0.5">
             {activeRules}
           </p>
           <p className="text-[11px] text-slate-muted mt-1">Listening to comments</p>
@@ -233,7 +233,7 @@ export function AutomationsManager({
 
         <Card className="p-4 border-slate-border bg-card">
           <p className="text-xs font-medium text-slate-muted">Total DMs Dispatched</p>
-          <p className="text-2xl font-extrabold text-brand-violet font-display mt-0.5">
+          <p className="text-2xl font-extrabold text-brand-violet dark:text-brand-300 font-display mt-0.5">
             {totalDmsSent}
           </p>
           <p className="text-[11px] text-slate-muted mt-1">Direct messages sent</p>
@@ -255,17 +255,17 @@ export function AutomationsManager({
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={`py-1.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                 isActive
-                  ? "bg-brand-violet text-white shadow-xs"
-                  : "text-slate-muted hover:text-slate-text"
+                  ? "bg-brand-violet text-white shadow-sm"
+                  : "text-slate-muted hover:text-slate-text hover:bg-slate-subtle/50"
               }`}
             >
               <span>{tab.label}</span>
               {tab.count !== undefined && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
                     isActive
                       ? "bg-white/20 text-white"
-                      : "bg-slate-border/50 text-slate-muted"
+                      : "bg-slate-border/50 text-slate-muted dark:bg-white/10 dark:text-slate-300"
                   }`}
                 >
                   {tab.count}
@@ -299,7 +299,7 @@ export function AutomationsManager({
                 }}
                 className="gap-2 shadow-md shadow-brand-violet/20"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4 h-4 shrink-0" />
                 <span>Create First Automation</span>
               </Button>
             </Card>

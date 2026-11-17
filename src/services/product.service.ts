@@ -5,35 +5,120 @@ import type { ProductDTO, ProductType } from "@/types";
 import type { CreateProductInput, UpdateProductInput } from "@/validators/product.validator";
 
 export function toProductDTO(doc: IProduct): ProductDTO {
-  const pricePaise = doc.price;
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
+  const pricePaise = Number(plain.price || 0);
   const priceInr = Math.round(pricePaise / 100);
 
-  const compareAtPricePaise = doc.compareAtPrice ?? null;
+  const compareAtPricePaise =
+    plain.compareAtPrice !== undefined && plain.compareAtPrice !== null
+      ? Number(plain.compareAtPrice)
+      : null;
   const compareAtPriceInr =
     compareAtPricePaise !== null ? Math.round(compareAtPricePaise / 100) : null;
 
+  const filesRaw = Array.isArray(plain.files) ? plain.files : [];
+  const courseContentRaw = Array.isArray(plain.courseContent) ? plain.courseContent : [];
+  const bookingConfigRaw = plain.bookingConfig as Record<string, unknown> | undefined;
+  const membershipConfigRaw = plain.membershipConfig as Record<string, unknown> | undefined;
+  const orderBumpRaw = plain.orderBump as Record<string, unknown> | undefined;
+
   return {
-    id: doc._id.toString(),
-    creatorId: doc.creatorId.toString(),
-    title: doc.title,
-    slug: doc.slug,
-    description: doc.description || "",
+    id: (plain._id || doc._id).toString(),
+    creatorId: (plain.creatorId || doc.creatorId).toString(),
+    title: String(plain.title || ""),
+    slug: String(plain.slug || ""),
+    description: String(plain.description || ""),
     pricePaise,
     priceInr,
     compareAtPricePaise,
     compareAtPriceInr,
-    type: doc.type,
-    coverImage: doc.coverImage || "",
-    files: doc.files || [],
-    courseContent: doc.courseContent || [],
-    bookingConfig: doc.bookingConfig,
-    membershipConfig: doc.membershipConfig,
-    isActive: doc.isActive,
-    inventory: doc.inventory,
-    salesCount: doc.salesCount || 0,
-    orderBump: doc.orderBump,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
+    type: plain.type as ProductType,
+    coverImage: String(plain.coverImage || ""),
+    files: filesRaw.map((f: unknown, fIdx: number) => {
+      const file = (f as Record<string, unknown>) || {};
+      return {
+        id: String(file.id || file._id || `file-${fIdx}`),
+        name: String(file.name || ""),
+        size: Number(file.size || file.sizeBytes || 0),
+        s3Key: String(file.s3Key || file.url || ""),
+        mimeType: String(file.mimeType || "application/octet-stream"),
+        url: file.url ? String(file.url) : undefined,
+      };
+    }),
+    courseContent: courseContentRaw.map((c: unknown, chIdx: number) => {
+      const chapter = (c as Record<string, unknown>) || {};
+      const lessonsRaw = Array.isArray(chapter.lessons) ? chapter.lessons : [];
+      return {
+        id: String(chapter.id || chapter._id || `ch-${chIdx}`),
+        title: String(chapter.title || ""),
+        order: Number(chapter.order || chIdx),
+        lessons: lessonsRaw.map((l: unknown, lIdx: number) => {
+          const lesson = (l as Record<string, unknown>) || {};
+          const attRaw = Array.isArray(lesson.attachments) ? lesson.attachments : [];
+          return {
+            id: String(lesson.id || lesson._id || `l-${lIdx}`),
+            title: String(lesson.title || ""),
+            order: Number(lesson.order || lIdx),
+            videoUrl: lesson.videoUrl ? String(lesson.videoUrl) : undefined,
+            notes: lesson.notes ? String(lesson.notes) : undefined,
+            duration: lesson.duration ? String(lesson.duration) : undefined,
+            attachments: attRaw.map((a: unknown) => {
+              const att = (a as Record<string, unknown>) || {};
+              return {
+                name: String(att.name || ""),
+                s3Key: String(att.s3Key || ""),
+                size: Number(att.size || 0),
+              };
+            }),
+          };
+        }),
+      };
+    }),
+    bookingConfig: bookingConfigRaw
+      ? {
+          durationMinutes: Number(bookingConfigRaw.durationMinutes || 30),
+          calendarUrl: bookingConfigRaw.calendarUrl ? String(bookingConfigRaw.calendarUrl) : undefined,
+          timezone: String(bookingConfigRaw.timezone || "Asia/Kolkata"),
+          customQuestions: Array.isArray(bookingConfigRaw.customQuestions)
+            ? bookingConfigRaw.customQuestions.map(String)
+            : [],
+        }
+      : undefined,
+    membershipConfig: membershipConfigRaw
+      ? {
+          interval: (membershipConfigRaw.interval as "monthly" | "yearly") || "monthly",
+          features: Array.isArray(membershipConfigRaw.features)
+            ? membershipConfigRaw.features.map(String)
+            : Array.isArray(membershipConfigRaw.perks)
+            ? (membershipConfigRaw.perks as string[]).map(String)
+            : [],
+        }
+      : undefined,
+    isActive: Boolean(plain.isActive),
+    inventory:
+      plain.inventory !== undefined && plain.inventory !== null
+        ? Number(plain.inventory)
+        : null,
+    salesCount: Number(plain.salesCount || 0),
+    orderBump: orderBumpRaw
+      ? {
+          enabled: Boolean(orderBumpRaw.enabled ?? true),
+          productId: orderBumpRaw.productId ? String(orderBumpRaw.productId) : undefined,
+          productTitle: orderBumpRaw.productTitle ? String(orderBumpRaw.productTitle) : (orderBumpRaw.title ? String(orderBumpRaw.title) : undefined),
+          discountPricePaise: orderBumpRaw.discountPricePaise ? Number(orderBumpRaw.discountPricePaise) : (orderBumpRaw.pricePaise ? Number(orderBumpRaw.pricePaise) : undefined),
+          headline: orderBumpRaw.headline ? String(orderBumpRaw.headline) : undefined,
+        }
+      : undefined,
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: plain.updatedAt
+      ? new Date(plain.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

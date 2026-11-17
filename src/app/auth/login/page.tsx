@@ -16,8 +16,8 @@ function QueryAlerts({
   onError: (msg: string) => void;
 }) {
   const searchParams = useSearchParams();
-  const registered = searchParams.get("registered");
-  const authError = searchParams.get("error");
+  const registered = searchParams?.get("registered");
+  const authError = searchParams?.get("error");
 
   return (
     <>

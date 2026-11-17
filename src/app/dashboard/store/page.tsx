@@ -12,6 +12,8 @@ export const metadata = {
   description: "Customize your link-in-bio storefront blocks, theme colors, and SEO.",
 };
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardStorePage() {
   const session = await getAuthSession();
   if (!session?.user?.id) {
@@ -19,7 +21,7 @@ export default async function DashboardStorePage() {
   }
 
   const profile = await getCreatorProfileByUserId(session.user.id);
-  if (!profile || !profile.onboardingCompleted) {
+  if (!profile) {
     redirect("/onboarding");
   }
 

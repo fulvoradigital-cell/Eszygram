@@ -33,7 +33,7 @@ export const DASHBOARD_NAV_ITEMS = [
 ];
 
 export function DashboardSidebar() {
-  const pathname = usePathname();
+  const pathname = usePathname() || "";
   const { data: session } = useSession();
 
   const user = session?.user;

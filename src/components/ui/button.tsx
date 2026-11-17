@@ -72,7 +72,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const buttonClasses = cn(
-      "inline-flex items-center justify-center font-semibold tracking-tight transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-55 dark:focus-visible:ring-offset-canvas-dark",
+      "inline-flex items-center justify-center whitespace-nowrap font-semibold tracking-tight transition-all duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-600 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-55 dark:focus-visible:ring-offset-canvas-dark",
       VARIANT_CLASSES[variant],
       SIZE_CLASSES[size],
       fullWidth && "w-full",
@@ -101,10 +101,12 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
         ) : (
-          leftIcon && <span className="shrink-0">{leftIcon}</span>
+          leftIcon && <span className="shrink-0 inline-flex items-center">{leftIcon}</span>
         )}
-        <span>{children}</span>
-        {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+        {children}
+        {!isLoading && rightIcon && (
+          <span className="shrink-0 inline-flex items-center">{rightIcon}</span>
+        )}
       </button>
     );
   }

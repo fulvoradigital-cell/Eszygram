@@ -5,16 +5,25 @@ import type { BlockDTO } from "@/types";
 import type { CreateBlockInput, UpdateBlockInput } from "@/validators/block.validator";
 
 export function toBlockDTO(doc: IBlock): BlockDTO {
+  const plain =
+    typeof (doc as { toObject?: () => Record<string, unknown> }).toObject === "function"
+      ? (doc as { toObject: () => Record<string, unknown> }).toObject()
+      : (doc as unknown as Record<string, unknown>);
+
   return {
-    id: doc._id.toString(),
-    userId: doc.userId.toString(),
-    type: doc.type,
-    order: doc.order,
-    isActive: doc.isActive,
-    data: (doc.data as Record<string, unknown>) || {},
-    clicks: doc.clicks || 0,
-    createdAt: doc.createdAt.toISOString(),
-    updatedAt: doc.updatedAt.toISOString(),
+    id: (plain._id || doc._id).toString(),
+    userId: (plain.userId || doc.userId).toString(),
+    type: plain.type as BlockDTO["type"],
+    order: Number(plain.order || 0),
+    isActive: Boolean(plain.isActive),
+    data: plain.data ? JSON.parse(JSON.stringify(plain.data)) : {},
+    clicks: Number(plain.clicks || 0),
+    createdAt: plain.createdAt
+      ? new Date(plain.createdAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
+    updatedAt: plain.updatedAt
+      ? new Date(plain.updatedAt as string | number | Date).toISOString()
+      : new Date().toISOString(),
   };
 }
 

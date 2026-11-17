@@ -151,7 +151,7 @@ export function ProductManager({ initialProducts, username }: ProductManagerProp
           onClick={handleOpenCreate}
           className="gap-2 shadow-md shadow-brand-violet/20 w-full sm:w-auto"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-4 h-4 shrink-0" />
           <span>New Product</span>
         </Button>
       </div>

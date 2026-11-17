@@ -1,17 +1,69 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
+export function getMimeType(filename: string): string {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  switch (ext) {
+    case "pdf":
+      return "application/pdf";
+    case "mp4":
+      return "video/mp4";
+    case "zip":
+      return "application/zip";
+    case "mp3":
+      return "audio/mpeg";
+    case "wav":
+      return "audio/wav";
+    case "mov":
+      return "video/quicktime";
+    case "webm":
+      return "video/webm";
+    case "mkv":
+      return "video/x-matroska";
+    case "png":
+      return "image/png";
+    case "jpg":
+    case "jpeg":
+      return "image/jpeg";
+    case "webp":
+      return "image/webp";
+    case "svg":
+      return "image/svg+xml";
+    case "gif":
+      return "image/gif";
+    case "epub":
+      return "application/epub+zip";
+    case "txt":
+      return "text/plain";
+    case "csv":
+      return "text/csv";
+    case "json":
+      return "application/json";
+    case "doc":
+      return "application/msword";
+    case "docx":
+      return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    case "xls":
+      return "application/vnd.ms-excel";
+    case "xlsx":
+      return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    default:
+      return "application/octet-stream";
+  }
+}
+
 function isS3Configured(): boolean {
-  const key = process.env.STORAGE_ACCESS_KEY_ID;
-  const secret = process.env.STORAGE_SECRET_ACCESS_KEY;
-  const bucket = process.env.STORAGE_BUCKET_NAME;
+  const key = process.env.STORAGE_ACCESS_KEY_ID?.trim();
+  const secret = process.env.STORAGE_SECRET_ACCESS_KEY?.trim();
+  const bucket = (process.env.STORAGE_BUCKET_NAME || process.env.STORAGE_BUCKET)?.trim();
 
   return Boolean(
     key &&
     secret &&
     bucket &&
     !key.startsWith("your-") &&
-    !key.startsWith("xxx")
+    !key.startsWith("xxx") &&
+    !key.includes("placeholder")
   );
 }
 
@@ -53,7 +105,7 @@ export async function generatePresignedUploadUrl(params: {
   const s3 = getS3Client();
 
   if (s3) {
-    const bucket = process.env.STORAGE_BUCKET_NAME!;
+    const bucket = (process.env.STORAGE_BUCKET_NAME || process.env.STORAGE_BUCKET)!;
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: s3Key,
@@ -90,7 +142,7 @@ export async function generatePresignedDownloadUrl(
   const s3 = getS3Client();
 
   if (s3 && !s3Key.startsWith("local_")) {
-    const bucket = process.env.STORAGE_BUCKET_NAME!;
+    const bucket = (process.env.STORAGE_BUCKET_NAME || process.env.STORAGE_BUCKET)!;
     const command = new GetObjectCommand({
       Bucket: bucket,
       Key: s3Key,

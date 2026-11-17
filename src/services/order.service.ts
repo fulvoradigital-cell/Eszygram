@@ -88,7 +88,7 @@ export function generateDownloadTokens(product: IProduct): DownloadToken[] {
     fileId: file.id,
     fileName: file.name,
     downloadCount: 0,
-    maxDownloads: 5,
+    maxDownloads: 10,
     expiresAt,
   }));
 }
@@ -245,9 +245,15 @@ export async function initializeCheckout(
       email: order.buyerEmail,
       buyerName: order.buyerName,
       productTitle: order.productTitle,
+      productType: order.productType,
       amountInr: 0,
       orderId: order._id.toString(),
       invoiceNumber: order.invoiceNumber,
+      paymentMethod: "free",
+      downloadTokens: order.downloadTokens.map((t) => ({
+        token: t.token,
+        fileName: t.fileName,
+      })),
     }).catch((err) => console.error("Order confirmation email failed:", err));
 
     return {
@@ -295,7 +301,8 @@ export async function initializeCheckout(
     customAnswers: input.customAnswers,
   });
 
-  const keyId = process.env.RAZORPAY_KEY_ID || "rzp_test_mock";
+  const isMockOrder = rzpOrder.id.startsWith("order_mock_");
+  const keyId = isMockOrder ? "rzp_test_mock" : (process.env.RAZORPAY_KEY_ID || "rzp_test_mock");
 
   return {
     orderId: order._id.toString(),
@@ -377,9 +384,16 @@ export async function verifyAndFulfillOrder({
     email: order.buyerEmail,
     buyerName: order.buyerName,
     productTitle: order.productTitle,
+    productType: order.productType,
     amountInr: Math.round(order.amountPaise / 100),
     orderId: order._id.toString(),
     invoiceNumber: order.invoiceNumber,
+    paymentMethod: order.paymentMethod,
+    paymentId: order.razorpayPaymentId,
+    downloadTokens: downloadTokens.map((t) => ({
+      token: t.token,
+      fileName: t.fileName,
+    })),
   }).catch((err) => console.error("Order confirmation email failed:", err));
 
   return toOrderDTO(order);
@@ -415,9 +429,16 @@ export async function fulfillOrderByRazorpayOrderId(
     email: order.buyerEmail,
     buyerName: order.buyerName,
     productTitle: order.productTitle,
+    productType: order.productType,
     amountInr: Math.round(order.amountPaise / 100),
     orderId: order._id.toString(),
     invoiceNumber: order.invoiceNumber,
+    paymentMethod: order.paymentMethod,
+    paymentId: paymentId || order.razorpayPaymentId,
+    downloadTokens: downloadTokens.map((t) => ({
+      token: t.token,
+      fileName: t.fileName,
+    })),
   }).catch((err) => console.error("Order confirmation email failed:", err));
 
   return toOrderDTO(order);

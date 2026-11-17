@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { apiSuccess, handleApiError } from "@/lib/api-response";
+import { apiError, apiSuccess, handleApiError } from "@/lib/api-response";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { dbConnect, isDatabaseConfigured } from "@/lib/db";
 import { ContactMessage } from "@/models/ContactMessage";
 import { contactSchema } from "@/validators/contact.validator";
@@ -8,13 +9,18 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    const clientIp = getClientIp(req.headers);
+    const limit = checkRateLimit(`contact:${clientIp}`, { limit: 5, windowMs: 5 * 60 * 1000 });
+    if (!limit.success) {
+      return apiError(
+        `Too many messages submitted. Please try again in ${limit.resetInSeconds} seconds.`,
+        429,
+        "RATE_LIMITED"
+      );
+    }
+
     const body = await req.json();
     const validated = contactSchema.parse(body);
-
-    const clientIp =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      "unknown";
 
     let messageId: string = `msg_${Date.now()}`;
 

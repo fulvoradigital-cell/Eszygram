@@ -1,7 +1,9 @@
 import crypto from "crypto";
 import { dbConnect, isDatabaseConfigured } from "@/lib/db";
+import { decryptSecret } from "@/lib/encryption";
 import { AutomationRule } from "@/models/AutomationRule";
 import { AutomationLog } from "@/models/AutomationLog";
+import { InstagramConnection } from "@/models/InstagramConnection";
 import { matchesKeyword } from "./automation.service";
 
 /**
@@ -202,20 +204,51 @@ export async function processInstagramWebhookPayload(
   let processedCount = 0;
 
   for (const entry of entries) {
+    // Scope to the creator who owns this connected Instagram account
+    const igConnection = entry.id
+      ? await InstagramConnection.findOne({
+          instagramAccountId: entry.id,
+          status: "connected",
+        }).select("+encryptedAccessToken")
+      : null;
+
+    let creatorAccessToken: string | undefined;
+    if (igConnection?.encryptedAccessToken && !igConnection.isDemoMode) {
+      try {
+        creatorAccessToken = decryptSecret(igConnection.encryptedAccessToken);
+      } catch (err) {
+        console.error("Failed to decrypt creator Instagram access token:", err);
+      }
+    }
+
     const changes = entry.changes || [];
     for (const change of changes) {
       if (change.field === "comments" && change.value) {
         const comment = change.value;
         const commentText = comment.text || "";
+        const mediaId = comment.media?.id || "";
         const fromUser = comment.from || { id: "unknown", username: "user" };
 
-        // Find active rules that match this comment text
-        const activeRules = await AutomationRule.find({
+        // Query active rules scoped to the connected creator (or global fallback in dev)
+        const ruleQuery: Record<string, unknown> = {
           isActive: true,
           triggerType: "comment",
-        });
+        };
+        if (igConnection) {
+          ruleQuery.creatorId = igConnection.creatorId;
+        } else if (process.env.NODE_ENV === "production") {
+          // In production, ignore webhooks for unconnected Instagram accounts
+          continue;
+        }
+
+        const activeRules = await AutomationRule.find(ruleQuery);
 
         for (const rule of activeRules) {
+          // If rule targets a specific post/reel, only trigger for that media ID
+          if (rule.targetPostId && rule.targetPostId.trim() !== "" && rule.targetPostId !== mediaId) {
+            continue;
+          }
+
           const match = matchesKeyword(rule, commentText);
           if (match.matches) {
             processedCount++;
@@ -233,13 +266,14 @@ export async function processInstagramWebhookPayload(
               `@${fromUser.username}`
             );
 
-            // 1. Send DM
+            // 1. Send DM using the creator's decrypted access token
             if (rule.actionType === "send_dm" || rule.actionType === "both") {
               await sendMetaDirectMessage({
                 recipientId: fromUser.id,
                 messageText: formattedDm,
                 buttonText: rule.dmButtonText,
                 buttonUrl: rule.dmButtonUrl,
+                pageAccessToken: creatorAccessToken,
               });
             }
 
@@ -248,6 +282,7 @@ export async function processInstagramWebhookPayload(
               await replyToInstagramComment({
                 commentId: comment.id,
                 replyText: publicReply,
+                pageAccessToken: creatorAccessToken,
               });
             }
 

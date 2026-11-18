@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Check,
+  Film,
   HelpCircle,
+  Image as ImageIcon,
   Instagram,
   Loader2,
   MessageCircle,
@@ -26,6 +28,7 @@ import type {
   AutomationActionType,
   AutomationRuleDTO,
   AutomationTriggerType,
+  InstagramMediaItem,
   KeywordMatchingType,
   ProductDTO,
 } from "@/types";
@@ -37,6 +40,7 @@ interface AutomationRuleModalProps {
   initialRule?: AutomationRuleDTO | null;
   products: ProductDTO[];
   username: string;
+  instagramConnected?: boolean;
 }
 
 const PRESET_KEYWORDS = ["LINK", "SEND", "GUIDE", "COURSE", "PRICE", "EBOOK", "TEMPLATE", "YES"];
@@ -48,6 +52,7 @@ export function AutomationRuleModal({
   initialRule,
   products,
   username,
+  instagramConnected = false,
 }: AutomationRuleModalProps) {
   const { toast } = useToast();
   const isEditing = Boolean(initialRule);
@@ -57,6 +62,34 @@ export function AutomationRuleModal({
   const [triggerType, setTriggerType] = useState<AutomationTriggerType>(
     initialRule?.triggerType || "comment"
   );
+  const [targetScope, setTargetScope] = useState<"all" | "specific">(
+    initialRule?.targetPostId ? "specific" : "all"
+  );
+  const [targetPostId, setTargetPostId] = useState<string>(
+    initialRule?.targetPostId || ""
+  );
+  const [mediaItems, setMediaItems] = useState<InstagramMediaItem[]>([]);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+
+  useEffect(() => {
+    if (!open || targetScope !== "specific" || !instagramConnected) return;
+    let active = true;
+    setLoadingMedia(true);
+    fetch("/api/creator/instagram/media")
+      .then((res) => res.json())
+      .then((json) => {
+        if (active && json?.success && Array.isArray(json.data?.media)) {
+          setMediaItems(json.data.media);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoadingMedia(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [open, targetScope, instagramConnected]);
   const [keywords, setKeywords] = useState<string[]>(
     initialRule?.keywords || ["LINK", "SEND"]
   );
@@ -171,6 +204,7 @@ export function AutomationRuleModal({
         dmButtonText: dmButtonText.trim() || undefined,
         dmButtonUrl: dmButtonUrl.trim() || undefined,
         commentReplies: commentReplies.filter(Boolean),
+        targetPostId: targetScope === "specific" ? targetPostId.trim() || "" : "",
         linkedProductId: selectedProductId || undefined,
         isActive,
       };
@@ -219,6 +253,126 @@ export function AutomationRuleModal({
               aria-label="Toggle automation rule active status"
             />
           </div>
+        </div>
+
+        {/* Step 0: Target Post or Reel */}
+        <div className="p-4 rounded-2xl bg-card border border-slate-border space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-navy font-display flex items-center gap-1.5">
+              <Instagram className="w-3.5 h-3.5 text-pink-500" />
+              <span>Target Post or Reel</span>
+            </h3>
+
+            <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-canvas border border-slate-border">
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetScope("all");
+                  setTargetPostId("");
+                }}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                  targetScope === "all"
+                    ? "bg-brand-violet text-white"
+                    : "text-slate-muted hover:text-navy"
+                }`}
+              >
+                Any Post or Reel
+              </button>
+              <button
+                type="button"
+                onClick={() => setTargetScope("specific")}
+                className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-colors ${
+                  targetScope === "specific"
+                    ? "bg-brand-violet text-white"
+                    : "text-slate-muted hover:text-navy"
+                }`}
+              >
+                Specific Post / Reel
+              </button>
+            </div>
+          </div>
+
+          {targetScope === "all" ? (
+            <p className="text-[11px] text-slate-muted leading-relaxed">
+              This rule will automatically listen for matching comments across <strong>all posts and Reels</strong> on your connected Instagram account.
+            </p>
+          ) : (
+            <div className="space-y-2.5">
+              {!instagramConnected ? (
+                <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 text-[11px] text-amber-800 dark:text-amber-300">
+                  Connect your Instagram account on the Automations page to browse and pick a specific Reel or Post, or enter a Media ID manually below.
+                </div>
+              ) : loadingMedia ? (
+                <div className="py-4 flex items-center justify-center gap-2 text-xs text-slate-muted">
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-violet" />
+                  <span>Loading your Instagram Reels &amp; Posts...</span>
+                </div>
+              ) : mediaItems.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                  {mediaItems.map((item) => {
+                    const isSelected = targetPostId === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => setTargetPostId(item.id)}
+                        className={`p-2.5 rounded-xl border text-left transition-all flex items-start gap-2.5 ${
+                          isSelected
+                            ? "border-brand-violet bg-brand-violet/10 ring-2 ring-brand-violet/20"
+                            : "border-slate-border bg-canvas hover:border-brand-violet/50"
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-lg bg-slate-subtle border border-slate-border flex items-center justify-center shrink-0 overflow-hidden">
+                          {item.thumbnailUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.thumbnailUrl}
+                              alt="Media preview"
+                              className="w-full h-full object-cover"
+                            />
+                          ) : item.mediaProductType === "REELS" ? (
+                            <Film className="w-4 h-4 text-pink-500" />
+                          ) : (
+                            <ImageIcon className="w-4 h-4 text-brand-violet" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1 mb-0.5">
+                            <span className="text-[10px] font-extrabold uppercase text-pink-600 dark:text-pink-400">
+                              {item.mediaProductType === "REELS" ? "Reel" : "Post"}
+                            </span>
+                            {isSelected && (
+                              <Check className="w-3.5 h-3.5 text-brand-violet shrink-0" />
+                            )}
+                          </div>
+                          <p className="text-[11px] text-navy line-clamp-2 leading-snug">
+                            {item.caption}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-[11px] text-slate-muted">
+                  No recent Instagram Reels or Posts found. You can still enter a specific Media ID below.
+                </p>
+              )}
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-muted mb-1">
+                  Target Media ID (auto-filled when you pick above)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="e.g. 17948293018472910"
+                  value={targetPostId}
+                  onChange={(e) => setTargetPostId(e.target.value)}
+                  className="h-8 text-xs font-mono"
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Step 1: Trigger & Keywords */}

@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import {
   Check,
   CheckCircle2,
   Copy,
+  Crown,
   ExternalLink,
   Globe,
   Instagram,
@@ -16,6 +19,7 @@ import {
   Lock,
   Save,
   Shield,
+  ShieldCheck,
   Sparkles,
   Store,
   Twitter,
@@ -26,14 +30,18 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Modal } from "@/components/ui/modal";
 import { ImageUpload } from "@/components/ui/ImageUpload";
 import { useToast } from "@/components/providers/ToastProvider";
-import type { CreatorNiche, CreatorProfileDTO } from "@/types";
+import { PLAN_CATALOG, PLAN_LIST, type BillingCycle } from "@/lib/plans";
+import type { CreatorNiche, CreatorProfileDTO, UserPlan } from "@/types";
 
 interface SettingsManagerProps {
   initialProfile: CreatorProfileDTO;
   userEmail: string;
-  userPlan: string;
+  userPlan: UserPlan;
+  planExpiresAt?: string | null;
+  initialTab?: "profile" | "security" | "billing";
 }
 
 const NICHES = [
@@ -54,9 +62,38 @@ export function SettingsManager({
   initialProfile,
   userEmail,
   userPlan,
+  planExpiresAt: initialPlanExpiresAt = null,
+  initialTab = "profile",
 }: SettingsManagerProps) {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<"profile" | "security" | "billing">("profile");
+  const router = useRouter();
+  const { update: updateSession } = useSession();
+  const [activeTab, setActiveTab] = useState<"profile" | "security" | "billing">(initialTab);
+
+  // Plan & Billing state
+  const [currentPlan, setCurrentPlan] = useState<UserPlan>(userPlan);
+  const [currentPlanExpiresAt, setCurrentPlanExpiresAt] = useState<string | null>(
+    initialPlanExpiresAt
+  );
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [upgradingPlan, setUpgradingPlan] = useState<UserPlan | null>(null);
+  const [mockUpgradeModal, setMockUpgradeModal] = useState<{
+    plan: "pro" | "business";
+    billingCycle: BillingCycle;
+    razorpayOrderId: string;
+    amountInr: number;
+  } | null>(null);
+  const [isVerifyingUpgrade, setIsVerifyingUpgrade] = useState(false);
+
+  // Load Razorpay Checkout script when on billing tab
+  useEffect(() => {
+    if (activeTab === "billing" && typeof window !== "undefined" && !window.Razorpay) {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  }, [activeTab]);
 
   // Profile Form
   const [displayName, setDisplayName] = useState(initialProfile.displayName || "");
@@ -180,6 +217,164 @@ export function SettingsManager({
       toast.error("Password Error", message);
     } finally {
       setIsChangingPassword(false);
+    }
+  };
+
+  const verifyPlanPayment = async (payload: {
+    plan: "pro" | "business";
+    billingCycle: BillingCycle;
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  }) => {
+    const verifyRes = await fetch("/api/creator/billing/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const verifyJson = await verifyRes.json();
+    if (!verifyRes.ok || !verifyJson.success) {
+      throw new Error(verifyJson.error?.message || "Payment verification failed.");
+    }
+
+    setCurrentPlan(verifyJson.data.plan);
+    setCurrentPlanExpiresAt(verifyJson.data.planExpiresAt);
+    await updateSession();
+    router.refresh();
+    toast.success(
+      `Upgraded to ${verifyJson.data.planName}!`,
+      "Your new plan features and lower platform fees are now active."
+    );
+  };
+
+  const handleSelectPlan = async (targetPlan: UserPlan) => {
+    if (targetPlan === currentPlan) return;
+
+    if (
+      targetPlan === "free" &&
+      !confirm(
+        "Are you sure you want to downgrade to the Starter (Free) plan? Your existing products stay safe, and standard platform fees will apply."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setUpgradingPlan(targetPlan);
+      const res = await fetch("/api/creator/billing/upgrade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          plan: targetPlan,
+          billingCycle,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Failed to initiate plan change.");
+      }
+
+      const data = json.data;
+
+      // Immediate activation (e.g. downgrade to Free)
+      if (data.activated) {
+        setCurrentPlan(data.plan);
+        setCurrentPlanExpiresAt(data.planExpiresAt);
+        await updateSession();
+        router.refresh();
+        toast.success("Plan Updated", `You are now on the ${PLAN_CATALOG[targetPlan].name} plan.`);
+        return;
+      }
+
+      const paidPlan = targetPlan as "pro" | "business";
+      const { razorpayOrderId, amountPaise, amountInr, keyId } = data;
+
+      // Use Razorpay live checkout if real keys and SDK are loaded
+      if (
+        typeof window !== "undefined" &&
+        window.Razorpay &&
+        keyId &&
+        !keyId.includes("mock") &&
+        razorpayOrderId &&
+        !razorpayOrderId.includes("mock")
+      ) {
+        const options = {
+          key: keyId,
+          amount: amountPaise,
+          currency: "INR",
+          name: "Ezsygram",
+          description: `${PLAN_CATALOG[paidPlan].name} (${billingCycle === "yearly" ? "Annual" : "Monthly"})`,
+          order_id: razorpayOrderId,
+          prefill: {
+            name: displayName || initialProfile.displayName,
+            email: userEmail,
+          },
+          theme: { color: "#6D28D9" },
+          handler: async (response: {
+            razorpay_order_id?: string;
+            razorpay_payment_id?: string;
+            razorpay_signature?: string;
+          }) => {
+            try {
+              setIsVerifyingUpgrade(true);
+              await verifyPlanPayment({
+                plan: paidPlan,
+                billingCycle,
+                razorpay_order_id: response.razorpay_order_id || razorpayOrderId,
+                razorpay_payment_id: response.razorpay_payment_id || "",
+                razorpay_signature: response.razorpay_signature || "",
+              });
+            } catch (err: unknown) {
+              toast.error(
+                "Verification Error",
+                err instanceof Error ? err.message : "Could not verify payment."
+              );
+            } finally {
+              setIsVerifyingUpgrade(false);
+            }
+          },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        // Test / dev mode confirmation dialog
+        setMockUpgradeModal({
+          plan: paidPlan,
+          billingCycle,
+          razorpayOrderId: razorpayOrderId || `order_mock_${Date.now()}`,
+          amountInr,
+        });
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Plan upgrade failed.";
+      toast.error("Upgrade Error", msg);
+    } finally {
+      setUpgradingPlan(null);
+    }
+  };
+
+  const handleCompleteMockUpgrade = async () => {
+    if (!mockUpgradeModal) return;
+    try {
+      setIsVerifyingUpgrade(true);
+      await verifyPlanPayment({
+        plan: mockUpgradeModal.plan,
+        billingCycle: mockUpgradeModal.billingCycle,
+        razorpay_order_id: mockUpgradeModal.razorpayOrderId,
+        razorpay_payment_id: `pay_mock_${Date.now()}`,
+        razorpay_signature: "mock_signature",
+      });
+      setMockUpgradeModal(null);
+    } catch (err: unknown) {
+      toast.error(
+        "Upgrade Failed",
+        err instanceof Error ? err.message : "Could not activate plan."
+      );
+    } finally {
+      setIsVerifyingUpgrade(false);
     }
   };
 
@@ -509,91 +704,265 @@ export function SettingsManager({
 
       {/* TAB 3: Plan & Fees */}
       {activeTab === "billing" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className={`p-6 border-slate-border relative overflow-hidden ${userPlan === "free" ? "ring-2 ring-brand-violet" : ""}`}>
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-navy font-display">Starter Plan</h3>
-                <p className="text-xs text-slate-muted">Ideal for new Indian creators &amp; coaches</p>
+        <div className="space-y-6">
+          {/* Active Subscription Banner + Billing Cycle Toggle */}
+          <Card className="p-5 border-slate-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm font-bold text-navy font-display">
+                  Current Plan: {PLAN_CATALOG[currentPlan].name}
+                </span>
+                <Badge
+                  variant={
+                    currentPlan === "business"
+                      ? "accent"
+                      : currentPlan === "pro"
+                      ? "brand"
+                      : "neutral"
+                  }
+                  size="sm"
+                  className="uppercase"
+                >
+                  {currentPlan}
+                </Badge>
               </div>
-              <Badge variant="neutral" size="sm">₹0 / month</Badge>
+              <p className="text-xs text-slate-muted">
+                {PLAN_CATALOG[currentPlan].feeLabel}
+                {currentPlanExpiresAt && currentPlan !== "free" && (
+                  <>
+                    {" "}
+                    • Renews on{" "}
+                    <span className="font-semibold text-navy">
+                      {new Intl.DateTimeFormat("en-IN", { dateStyle: "medium" }).format(
+                        new Date(currentPlanExpiresAt)
+                      )}
+                    </span>
+                  </>
+                )}
+              </p>
             </div>
 
-            <div className="text-2xl font-extrabold text-navy font-display mb-4">
-              5% <span className="text-xs font-normal text-slate-muted">platform fee per sale</span>
+            {/* Monthly / Yearly Toggle */}
+            <div className="inline-flex items-center gap-1 p-1 rounded-xl bg-canvas border border-slate-border self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setBillingCycle("monthly")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  billingCycle === "monthly"
+                    ? "bg-brand-violet text-white shadow-xs"
+                    : "text-slate-muted hover:text-navy"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                type="button"
+                onClick={() => setBillingCycle("yearly")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  billingCycle === "yearly"
+                    ? "bg-brand-violet text-white shadow-xs"
+                    : "text-slate-muted hover:text-navy"
+                }`}
+              >
+                <span>Yearly</span>
+                <span
+                  className={`text-[10px] px-1.5 py-0.5 rounded-full font-extrabold ${
+                    billingCycle === "yearly"
+                      ? "bg-white/20 text-white"
+                      : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  }`}
+                >
+                  2 mo free
+                </span>
+              </button>
             </div>
-
-            <ul className="space-y-2.5 text-xs text-slate-muted mb-6">
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Unlimited digital products &amp; courses
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Instant UPI &amp; card payment checkout
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Automated T+1 daily bank settlements
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                Up to 3 active Instagram comment triggers
-              </li>
-            </ul>
-
-            {userPlan === "free" ? (
-              <Badge variant="brand" className="w-full justify-center py-2">
-                Current Active Plan
-              </Badge>
-            ) : (
-              <Button variant="outline" size="sm" className="w-full text-xs">
-                Downgrade
-              </Button>
-            )}
           </Card>
 
-          <Card className="p-6 border-slate-border bg-gradient-to-br from-brand-violet/5 via-card to-canvas relative overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h3 className="text-base font-bold text-navy font-display flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-brand-violet" />
-                  Creator Pro
-                </h3>
-                <p className="text-xs text-slate-muted">For scaling coaches, educators &amp; stores</p>
-              </div>
-              <Badge variant="brand" size="sm">₹999 / mo</Badge>
-            </div>
+          {/* 3-Tier Plan Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
+            {PLAN_LIST.map((planDef) => {
+              const isCurrent = currentPlan === planDef.id;
+              const price =
+                billingCycle === "yearly"
+                  ? planDef.yearlyPriceInr
+                  : planDef.monthlyPriceInr;
+              const periodLabel = billingCycle === "yearly" ? "/yr" : "/mo";
+              const isBusy = upgradingPlan === planDef.id;
+              const planOrder: Record<UserPlan, number> = { free: 0, pro: 1, business: 2 };
+              const isDowngrade = planOrder[planDef.id] < planOrder[currentPlan];
 
-            <div className="text-2xl font-extrabold text-brand-violet font-display mb-4">
-              0% <span className="text-xs font-normal text-slate-muted">platform fee (Keep 100% of sales)</span>
-            </div>
+              return (
+                <Card
+                  key={planDef.id}
+                  className={`p-5 sm:p-6 border-slate-border flex flex-col justify-between relative overflow-hidden ${
+                    isCurrent
+                      ? "ring-2 ring-brand-violet"
+                      : planDef.popular
+                      ? "bg-gradient-to-br from-brand-violet/5 via-card to-canvas border-brand-violet/40"
+                      : ""
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      <div>
+                        <h3 className="text-base font-bold text-navy font-display flex items-center gap-1.5">
+                          {planDef.id === "pro" && (
+                            <Sparkles className="w-4 h-4 text-brand-violet shrink-0" />
+                          )}
+                          {planDef.id === "business" && (
+                            <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                          )}
+                          <span>{planDef.name}</span>
+                        </h3>
+                        <p className="text-xs text-slate-muted mt-0.5">{planDef.tagline}</p>
+                      </div>
+                      {planDef.popular && !isCurrent && (
+                        <Badge variant="brand" size="sm">
+                          Popular
+                        </Badge>
+                      )}
+                    </div>
 
-            <ul className="space-y-2.5 text-xs text-slate-muted mb-6">
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-brand-violet" />
-                0% platform fee on all sales
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-brand-violet" />
-                Unlimited Instagram comment-to-DM triggers
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-brand-violet" />
-                Priority T+0 same-day settlement routing
-              </li>
-              <li className="flex items-center gap-2 text-navy">
-                <Check className="w-4 h-4 text-brand-violet" />
-                Custom domain mapping (e.g. store.yourbrand.com)
-              </li>
-            </ul>
+                    <div className="mb-1">
+                      <span className="text-3xl font-extrabold text-navy font-display">
+                        ₹{price.toLocaleString("en-IN")}
+                      </span>
+                      {price > 0 && (
+                        <span className="text-xs font-semibold text-slate-muted ml-1">
+                          {periodLabel}
+                        </span>
+                      )}
+                    </div>
 
-            <Button size="sm" className="w-full bg-brand-violet hover:bg-brand-violet/90 text-white font-semibold text-xs">
-              Upgrade to Pro (₹999/mo)
-            </Button>
-          </Card>
+                    <div className="text-xs font-bold text-brand-violet mb-5">
+                      {planDef.feeLabel}
+                    </div>
+
+                    <ul className="space-y-2.5 text-xs text-slate-muted mb-6">
+                      {planDef.features.map((feat) => (
+                        <li key={feat} className="flex items-start gap-2 text-navy">
+                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    {isCurrent ? (
+                      <Badge variant="brand" className="w-full justify-center py-2">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Current Active Plan</span>
+                      </Badge>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant={isDowngrade ? "outline" : "primary"}
+                        size="sm"
+                        disabled={Boolean(upgradingPlan) || isVerifyingUpgrade}
+                        onClick={() => handleSelectPlan(planDef.id)}
+                        className={`w-full text-xs font-semibold ${
+                          !isDowngrade
+                            ? "bg-brand-violet hover:bg-brand-violet/90 text-white shadow-brand"
+                            : ""
+                        }`}
+                      >
+                        {isBusy ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>Processing...</span>
+                          </>
+                        ) : isDowngrade ? (
+                          <span>Downgrade to {planDef.name}</span>
+                        ) : (
+                          <>
+                            <Zap className="w-3.5 h-3.5" />
+                            <span>
+                              Upgrade to {planDef.name} (₹{price.toLocaleString("en-IN")}
+                              {periodLabel})
+                            </span>
+                          </>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
+
+      {/* Test Mode Plan Upgrade Confirmation Modal */}
+      <Modal
+        open={Boolean(mockUpgradeModal)}
+        onClose={() => !isVerifyingUpgrade && setMockUpgradeModal(null)}
+        title="Confirm Plan Upgrade (Test Mode)"
+        description="Razorpay live keys are not configured. Simulate payment below to activate your upgraded plan immediately."
+        size="sm"
+      >
+        {mockUpgradeModal && (
+          <div className="space-y-4 pt-2">
+            <div className="p-4 rounded-2xl bg-slate-subtle border border-slate-border space-y-2 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-muted">Selected Plan</span>
+                <span className="font-bold text-navy">
+                  {PLAN_CATALOG[mockUpgradeModal.plan].name}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-muted">Billing Cycle</span>
+                <span className="font-semibold text-navy capitalize">
+                  {mockUpgradeModal.billingCycle}
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-slate-border">
+                <span className="font-bold text-navy">Total Amount</span>
+                <span className="text-base font-extrabold text-brand-violet">
+                  ₹{mockUpgradeModal.amountInr.toLocaleString("en-IN")}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-slate-muted">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Instant activation • Your session and platform fee update right away.</span>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isVerifyingUpgrade}
+                onClick={() => setMockUpgradeModal(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                size="sm"
+                disabled={isVerifyingUpgrade}
+                onClick={handleCompleteMockUpgrade}
+                className="shadow-brand"
+              >
+                {isVerifyingUpgrade ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Activating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Complete Upgrade</span>
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

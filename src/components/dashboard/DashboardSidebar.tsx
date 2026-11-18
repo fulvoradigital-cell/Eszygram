@@ -12,6 +12,7 @@ import {
   Package,
   Settings,
   ShoppingBag,
+  Sparkles,
   Store,
   Users,
   Zap,
@@ -91,6 +92,16 @@ export function DashboardSidebar() {
 
       {/* User Footer Profile & Plan */}
       <div className="p-4 border-t border-slate-border space-y-3">
+        {plan !== "business" && (
+          <Link
+            href="/dashboard/settings?tab=billing"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold text-white bg-gradient-to-r from-brand-violet to-brand-indigo hover:opacity-95 shadow-brand transition-all"
+          >
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>{plan === "free" ? "Upgrade to Pro" : "Upgrade to Business"}</span>
+          </Link>
+        )}
+
         <div className="p-3 rounded-xl bg-canvas border border-slate-border flex items-center justify-between">
           <div className="flex items-center gap-2.5 min-w-0">
             <Avatar

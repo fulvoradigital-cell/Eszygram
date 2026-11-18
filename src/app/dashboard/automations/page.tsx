@@ -8,6 +8,7 @@ import {
   getAutomationRulesByCreatorId,
 } from "@/services/automation.service";
 import { getProductsByCreatorId } from "@/services/product.service";
+import { getInstagramConnection } from "@/services/instagram-connection.service";
 import { AutomationsManager } from "@/components/automations/AutomationsManager";
 
 export const metadata: Metadata = {
@@ -29,10 +30,11 @@ export default async function AutomationsDashboardPage() {
     redirect("/onboarding");
   }
 
-  const [rules, logs, products] = await Promise.all([
+  const [rules, logs, products, connection] = await Promise.all([
     getAutomationRulesByCreatorId(session.user.id),
     getAutomationLogs(session.user.id, 50),
     getProductsByCreatorId(session.user.id),
+    getInstagramConnection(session.user.id),
   ]);
 
   return (
@@ -40,6 +42,7 @@ export default async function AutomationsDashboardPage() {
       <AutomationsManager
         initialRules={rules}
         initialLogs={logs}
+        initialConnection={connection}
         products={products}
         creatorDisplayName={profile.displayName || profile.username}
         username={profile.username}

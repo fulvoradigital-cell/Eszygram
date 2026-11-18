@@ -34,12 +34,14 @@ import { AutomationSimulator } from "./AutomationSimulator";
 import type {
   AutomationLogDTO,
   AutomationRuleDTO,
+  InstagramConnectionDTO,
   ProductDTO,
 } from "@/types";
 
 interface AutomationsManagerProps {
   initialRules: AutomationRuleDTO[];
   initialLogs: AutomationLogDTO[];
+  initialConnection: InstagramConnectionDTO;
   products: ProductDTO[];
   creatorDisplayName: string;
   username: string;
@@ -49,6 +51,7 @@ interface AutomationsManagerProps {
 export function AutomationsManager({
   initialRules,
   initialLogs,
+  initialConnection,
   products,
   creatorDisplayName,
   username,
@@ -57,7 +60,74 @@ export function AutomationsManager({
   const { toast } = useToast();
   const [rules, setRules] = useState<AutomationRuleDTO[]>(initialRules);
   const [logs, setLogs] = useState<AutomationLogDTO[]>(initialLogs);
+  const [connection, setConnection] = useState<InstagramConnectionDTO>(initialConnection);
+  const [isConnectingIg, setIsConnectingIg] = useState(false);
+  const [isDisconnectingIg, setIsDisconnectingIg] = useState(false);
   const [activeTab, setActiveTab] = useState<"rules" | "simulator" | "logs">("rules");
+
+  async function handleConnectInstagram(mode: "oauth" | "demo") {
+    try {
+      setIsConnectingIg(true);
+      const res = await fetch("/api/creator/instagram/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          mode,
+          username,
+          displayName: creatorDisplayName,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Failed to connect Instagram.");
+      }
+
+      if (json.data.mode === "oauth" && json.data.authUrl) {
+        window.location.href = json.data.authUrl;
+        return;
+      }
+
+      if (json.data.connection) {
+        setConnection(json.data.connection);
+        toast.success(
+          "Instagram Connected (Demo Mode)",
+          `Connected @${json.data.connection.instagramUsername}. You can now pick Reels & Posts when creating rules.`
+        );
+      }
+    } catch (err: unknown) {
+      toast.error(
+        "Connection Failed",
+        err instanceof Error ? err.message : "Could not connect Instagram."
+      );
+    } finally {
+      setIsConnectingIg(false);
+    }
+  }
+
+  async function handleDisconnectInstagram() {
+    if (!confirm("Disconnect your Instagram account? Live automated DMs will pause until reconnected.")) {
+      return;
+    }
+    try {
+      setIsDisconnectingIg(true);
+      const res = await fetch("/api/creator/instagram/connection", {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error?.message || "Failed to disconnect Instagram.");
+      }
+      setConnection(json.data);
+      toast.success("Instagram Disconnected", "Your Instagram account has been unlinked.");
+    } catch (err: unknown) {
+      toast.error(
+        "Error",
+        err instanceof Error ? err.message : "Could not disconnect Instagram."
+      );
+    } finally {
+      setIsDisconnectingIg(false);
+    }
+  }
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -213,6 +283,116 @@ export function AutomationsManager({
         </Button>
       </div>
 
+      {/* Instagram Account Connection Status Card */}
+      <Card
+        className={`p-4 sm:p-5 border transition-all ${
+          connection.connected
+            ? "border-emerald-500/30 bg-emerald-500/5"
+            : "border-amber-500/30 bg-amber-500/5"
+        }`}
+      >
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div
+              className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
+                connection.connected
+                  ? "bg-gradient-to-tr from-pink-500 via-rose-500 to-amber-500 text-white shadow-sm"
+                  : "bg-amber-500/15 text-amber-600 dark:text-amber-400"
+              }`}
+            >
+              <Instagram className="w-5 h-5" />
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-sm font-bold text-navy font-display">
+                  {connection.connected
+                    ? `@${connection.instagramUsername}`
+                    : "Instagram Account Not Connected"}
+                </h2>
+                {connection.connected ? (
+                  <Badge
+                    variant={connection.isDemoMode ? "warning" : "success"}
+                    size="sm"
+                    dot
+                  >
+                    {connection.isDemoMode ? "Demo Sandbox" : "Live Connected"}
+                  </Badge>
+                ) : (
+                  <Badge variant="warning" size="sm" dot>
+                    Simulator Only
+                  </Badge>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-muted leading-relaxed max-w-2xl">
+                {connection.connected
+                  ? connection.isDemoMode
+                    ? "Connected in Demo Sandbox mode so you can select sample Reels/Posts and test automations. Add META_APP_ID & META_APP_SECRET in .env.local to link a real Instagram Business account."
+                    : "Your Instagram Professional account is linked. Active rules will automatically reply to comments and send instant DMs."
+                  : "Connect your Instagram Creator or Business account to trigger live DMs on real Reels & Posts. Without a connection, rules only run inside the Reels Simulator tab."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto shrink-0">
+            {connection.connected ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isDisconnectingIg}
+                onClick={handleDisconnectInstagram}
+                className="text-xs w-full sm:w-auto"
+              >
+                {isDisconnectingIg ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                )}
+                <span>Disconnect</span>
+              </Button>
+            ) : (
+              <>
+                {connection.metaOAuthConfigured ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={isConnectingIg}
+                    onClick={() => handleConnectInstagram("oauth")}
+                    className="text-xs shadow-brand w-full sm:w-auto"
+                  >
+                    {isConnectingIg ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Instagram className="w-3.5 h-3.5" />
+                    )}
+                    <span>Connect Instagram</span>
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    disabled={isConnectingIg}
+                    onClick={() => handleConnectInstagram("demo")}
+                    className="text-xs shadow-brand w-full sm:w-auto"
+                  >
+                    {isConnectingIg ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Instagram className="w-3.5 h-3.5" />
+                    )}
+                    <span>Connect Demo Instagram</span>
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      </Card>
+
       {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
         <Card className="p-4 border-slate-border bg-card">
@@ -318,10 +498,14 @@ export function AutomationsManager({
                     {/* Left: Info & Keywords */}
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-pink-50 text-pink-700 border border-pink-200/50">
-                          <Instagram className="w-3 h-3 text-pink-600" />
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-pink-500/10 text-pink-600 dark:text-pink-300 border border-pink-500/20">
+                          <Instagram className="w-3 h-3 shrink-0" />
                           Comment to DM
                         </span>
+
+                        <Badge variant="outline" size="sm" className="text-[10px]">
+                          {rule.targetPostId ? "Specific Post / Reel" : "All Posts & Reels"}
+                        </Badge>
 
                         <span className="text-xs text-slate-muted">•</span>
                         <span className="text-xs text-slate-muted font-medium">
@@ -499,6 +683,7 @@ export function AutomationsManager({
           initialRule={editingRule}
           products={products}
           username={username}
+          instagramConnected={connection.connected}
         />
       )}
 

@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import { AppError } from "@/lib/api-response";
 import {
   findUserByEmail,
+  findUserById,
   upsertGoogleUser,
   verifyUserCredentials,
 } from "@/services/user.service";
@@ -90,7 +91,7 @@ export const authOptions: NextAuthOptions = {
       }
       return true;
     },
-    async jwt({ token, user, account, trigger, session }) {
+    async jwt({ token, user, account, trigger }) {
       if (user) {
         if (account?.provider === "google" && user.email) {
           const dbUser = await findUserByEmail(user.email);
@@ -109,8 +110,18 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
-      if (trigger === "update" && session?.plan) {
-        token.plan = session.plan;
+      if (trigger === "update" && token.id) {
+        try {
+          const freshUser = await findUserById(token.id);
+          if (freshUser) {
+            token.plan = freshUser.plan;
+            token.status = freshUser.status;
+            token.role = freshUser.role;
+            token.name = freshUser.name;
+          }
+        } catch {
+          // Keep existing token if DB momentarily unavailable
+        }
       }
 
       return token;

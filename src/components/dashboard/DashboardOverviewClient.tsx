@@ -42,7 +42,7 @@ export function DashboardOverviewClient({
     <Card className="p-5 sm:p-6 bg-gradient-to-br from-brand-violet/5 via-card to-indigo-50/20 dark:to-indigo-950/20 border-brand-violet/20 relative overflow-hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-1.5">
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
             <h1 className="text-xl sm:text-2xl font-extrabold text-navy font-display">
               Welcome back, {displayName}! 👋
             </h1>
@@ -53,6 +53,15 @@ export function DashboardOverviewClient({
             >
               {plan}
             </Badge>
+            {plan !== "business" && (
+              <Link
+                href="/dashboard/settings?tab=billing"
+                className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-brand-violet to-brand-indigo hover:opacity-90 transition-opacity shadow-xs whitespace-nowrap"
+              >
+                <Sparkles className="w-3 h-3 shrink-0" />
+                <span>Upgrade Plan</span>
+              </Link>
+            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-muted">
             Your storefront is live and ready for your Instagram audience.

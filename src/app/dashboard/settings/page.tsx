@@ -6,6 +6,7 @@ import {
   getCreatorProfileByUserId,
   toCreatorProfileDTO,
 } from "@/services/creator.service";
+import { findUserById } from "@/services/user.service";
 import { SettingsManager } from "@/components/settings/SettingsManager";
 
 export const metadata: Metadata = {
@@ -15,25 +16,39 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsDashboardPage() {
+interface SettingsPageProps {
+  searchParams?: { tab?: string };
+}
+
+export default async function SettingsDashboardPage({ searchParams }: SettingsPageProps) {
   const session = await getAuthSession();
   if (!session?.user?.id) {
     redirect("/auth/login?callbackUrl=/dashboard/settings");
   }
 
-  const profile = await getCreatorProfileByUserId(session.user.id);
+  const [profile, freshUser] = await Promise.all([
+    getCreatorProfileByUserId(session.user.id),
+    findUserById(session.user.id),
+  ]);
+
   if (!profile) {
     redirect("/onboarding");
   }
 
   const profileDTO = toCreatorProfileDTO(profile);
+  const initialTab =
+    searchParams?.tab === "billing" || searchParams?.tab === "security"
+      ? searchParams.tab
+      : "profile";
 
   return (
-    <div className="max-w-4xl mx-auto py-2 space-y-6">
+    <div className="max-w-5xl mx-auto py-2 space-y-6">
       <SettingsManager
         initialProfile={profileDTO}
-        userEmail={session.user.email || ""}
-        userPlan={session.user.plan || "free"}
+        userEmail={freshUser?.email || session.user.email || ""}
+        userPlan={freshUser?.plan || session.user.plan || "free"}
+        planExpiresAt={freshUser?.planExpiresAt || null}
+        initialTab={initialTab}
       />
     </div>
   );

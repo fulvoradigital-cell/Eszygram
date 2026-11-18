@@ -53,3 +53,25 @@ export interface AutomationSimulationResult {
   publicCommentReply?: string;
   message: string;
 }
+
+export interface InstagramConnectionDTO {
+  connected: boolean;
+  instagramAccountId?: string;
+  instagramUsername?: string;
+  instagramName?: string;
+  profilePictureUrl?: string;
+  isDemoMode: boolean;
+  status: "connected" | "disconnected" | "expired";
+  connectedAt?: string;
+  metaOAuthConfigured: boolean;
+}
+
+export interface InstagramMediaItem {
+  id: string;
+  caption: string;
+  mediaType: "VIDEO" | "IMAGE" | "CAROUSEL_ALBUM";
+  mediaProductType: "REELS" | "FEED";
+  thumbnailUrl?: string;
+  permalink?: string;
+  timestamp: string;
+}

@@ -42,6 +42,13 @@ export const simulateAutomationSchema = z.object({
   instagramUsername: z.string().trim().min(1).default("insta_user"),
 });
 
+export const connectInstagramSchema = z.object({
+  mode: z.enum(["oauth", "demo"]).default("oauth"),
+  username: z.string().trim().max(50).optional(),
+  displayName: z.string().trim().max(80).optional(),
+});
+
 export type CreateAutomationRuleInput = z.infer<typeof createAutomationRuleSchema>;
 export type UpdateAutomationRuleInput = z.infer<typeof updateAutomationRuleSchema>;
 export type SimulateAutomationInput = z.infer<typeof simulateAutomationSchema>;
+export type ConnectInstagramInput = z.infer<typeof connectInstagramSchema>;

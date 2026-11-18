@@ -49,12 +49,23 @@ export function MobilePreviewFrame({
       >
         {/* Profile Header */}
         <div className="text-center pt-2">
+          {profile.coverImageUrl && (
+            <div className="w-full aspect-[2.6/1] rounded-2xl overflow-hidden mb-[-28px] relative shadow-xs border border-black/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={profile.coverImageUrl}
+                alt="Storefront banner"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+
           <Avatar
             name={profile.displayName || "Creator"}
             alt={profile.displayName || "Creator"}
             src={profile.avatarUrl || undefined}
             size="lg"
-            className="mx-auto shadow-md ring-2 ring-white/60 mb-2.5"
+            className="mx-auto shadow-md ring-2 ring-white/80 dark:ring-black/60 mb-2.5 relative z-10"
           />
 
           <h2

@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { useToast } from "@/components/providers/ToastProvider";
 import type {
   BookingConfig,
@@ -547,14 +548,12 @@ export function ProductEditorModal({
               </div>
 
               <div>
-                <label htmlFor="productCover" className="block text-xs font-semibold text-slate-text uppercase mb-1.5">
-                  Cover Image URL (optional)
-                </label>
-                <Input
-                  id="productCover"
+                <ImageUpload
+                  label="Product Cover Image"
+                  description="Upload a high-quality cover image for your product (16:9 banner or square). This is displayed on your storefront and checkout."
+                  variant="cover"
                   value={coverImage}
-                  onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="https://images.unsplash.com/... or uploaded asset"
+                  onChange={setCoverImage}
                 />
               </div>
 

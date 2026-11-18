@@ -122,6 +122,7 @@ export function toCreatorProfileDTO(profile: ICreatorProfile): CreatorProfileDTO
     displayName: String(plain.displayName || ""),
     bio: String(plain.bio || ""),
     avatarUrl: String(plain.avatarUrl || ""),
+    coverImageUrl: String(plain.coverImageUrl || ""),
     niche: (plain.niche as CreatorNiche) || "other",
     socialLinks: socialLinksRaw.map((s: unknown) => {
       const item = (s as Record<string, unknown>) || {};
@@ -174,6 +175,9 @@ export async function updateCreatorProfileSettings(
   profile.bio = data.bio?.trim() || "";
   if (data.avatarUrl !== undefined) {
     profile.avatarUrl = data.avatarUrl.trim();
+  }
+  if (data.coverImageUrl !== undefined) {
+    profile.coverImageUrl = data.coverImageUrl.trim();
   }
   if (data.niche) {
     profile.niche = data.niche as CreatorNiche;

@@ -8,6 +8,7 @@ export interface ICreatorProfile extends Document {
   displayName: string;
   bio: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
   niche: CreatorNiche;
   socialLinks: SocialLink[];
   theme: ProfileTheme;
@@ -88,6 +89,11 @@ const CreatorProfileSchema = new Schema<ICreatorProfile>(
       default: "",
     },
     avatarUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    coverImageUrl: {
       type: String,
       trim: true,
       default: "",

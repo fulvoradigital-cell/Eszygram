@@ -38,6 +38,7 @@ export interface CreatorProfileDTO {
   displayName: string;
   bio: string;
   avatarUrl?: string;
+  coverImageUrl?: string;
   niche: CreatorNiche;
   socialLinks: SocialLink[];
   theme: ProfileTheme;

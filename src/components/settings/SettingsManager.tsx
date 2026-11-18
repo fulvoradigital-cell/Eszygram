@@ -26,6 +26,7 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ImageUpload } from "@/components/ui/ImageUpload";
 import { useToast } from "@/components/providers/ToastProvider";
 import type { CreatorNiche, CreatorProfileDTO } from "@/types";
 
@@ -62,6 +63,7 @@ export function SettingsManager({
   const [bio, setBio] = useState(initialProfile.bio || "");
   const [niche, setNiche] = useState<CreatorNiche>(initialProfile.niche || "other");
   const [avatarUrl, setAvatarUrl] = useState(initialProfile.avatarUrl || "");
+  const [coverImageUrl, setCoverImageUrl] = useState(initialProfile.coverImageUrl || "");
 
   // Social Links
   const getSocialUrl = (platform: string) => {
@@ -115,6 +117,7 @@ export function SettingsManager({
           bio: bio.trim(),
           niche,
           avatarUrl: avatarUrl.trim(),
+          coverImageUrl: coverImageUrl.trim(),
           socialLinks,
         }),
       });
@@ -329,16 +332,21 @@ export function SettingsManager({
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-navy mb-1.5">
-                  Avatar / Profile Picture URL
-                </label>
-                <input
-                  type="url"
-                  placeholder="https://images.unsplash.com/..."
+              <div className="space-y-4 pt-1">
+                <ImageUpload
+                  label="Profile Picture / Avatar"
+                  description="Your avatar appears on your storefront header, mobile preview, and customer order receipts."
+                  variant="avatar"
                   value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-border bg-canvas focus:outline-none focus:ring-2 focus:ring-brand-violet/20"
+                  onChange={setAvatarUrl}
+                />
+
+                <ImageUpload
+                  label="Storefront Cover Banner (Optional)"
+                  description="A prominent cover banner displayed at the top of your public storefront behind your profile avatar (1200×630 recommended)."
+                  variant="cover"
+                  value={coverImageUrl}
+                  onChange={setCoverImageUrl}
                 />
               </div>
 

@@ -89,14 +89,26 @@ export default async function StorefrontPage({ params }: StorefrontPageProps) {
 
       {/* Main Storefront Column (max 520px) */}
       <div className="w-full max-w-[500px] mx-auto flex-1 flex flex-col justify-between">
+        {/* Optional Storefront Cover Banner */}
+        {profile.coverImageUrl && (
+          <div className="w-full aspect-[2.8/1] sm:aspect-[3/1] rounded-3xl overflow-hidden mb-[-42px] relative shadow-sm border border-black/5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={profile.coverImageUrl}
+              alt={`${profile.displayName}'s cover banner`}
+              className="w-full h-full object-cover"
+            />
+          </div>
+        )}
+
         {/* Creator Header */}
-        <header className="text-center pt-2 pb-6">
+        <header className="text-center pt-2 pb-6 relative z-10">
           <Avatar
             name={profile.displayName}
             alt={profile.displayName}
             src={profile.avatarUrl || undefined}
             size="xl"
-            className="mx-auto mb-3.5 shadow-lg ring-4 ring-white/80 dark:ring-black/40"
+            className="mx-auto mb-3.5 shadow-lg ring-4 ring-white/90 dark:ring-black/60"
           />
 
           <h1

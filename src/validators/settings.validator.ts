@@ -8,6 +8,7 @@ export const updateProfileSettingsSchema = z.object({
     .max(60, "Display name cannot exceed 60 characters"),
   bio: z.string().trim().max(250, "Bio cannot exceed 250 characters").optional().default(""),
   avatarUrl: z.string().trim().optional().or(z.literal("")),
+  coverImageUrl: z.string().trim().optional().or(z.literal("")),
   niche: z.string().default("other"),
   socialLinks: z
     .array(

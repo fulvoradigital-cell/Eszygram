@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import {
   ExternalLink,
@@ -43,6 +43,15 @@ export function StoreBuilder({ initialProfile, initialBlocks }: StoreBuilderProp
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingBlock, setEditingBlock] = useState<BlockDTO | null>(null);
   const [isMobilePreviewOpen, setIsMobilePreviewOpen] = useState(false);
+  const themeSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (themeSaveTimerRef.current) {
+        clearTimeout(themeSaveTimerRef.current);
+      }
+    };
+  }, []);
 
   // 1. Add Block
   async function handleAddBlock(type: BlockType, data: Record<string, unknown>) {
@@ -135,22 +144,27 @@ export function StoreBuilder({ initialProfile, initialBlocks }: StoreBuilderProp
     }
   }
 
-  // 6. Update Theme
+  // 6. Update Theme (silent debounced auto-save so color changes don't spam toasts)
   async function handleUpdateTheme(newTheme: Partial<ProfileTheme>) {
     const updated = { ...theme, ...newTheme };
     setTheme(updated);
 
-    try {
-      const res = await fetch("/api/creator/theme", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-      if (!res.ok) throw new Error("Failed to update theme");
-      toast.success("Theme Saved", "Storefront theme updated successfully.");
-    } catch {
-      toast.error("Error", "Could not save theme changes.");
+    if (themeSaveTimerRef.current) {
+      clearTimeout(themeSaveTimerRef.current);
     }
+
+    themeSaveTimerRef.current = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/creator/theme", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updated),
+        });
+        if (!res.ok) throw new Error("Failed to update theme");
+      } catch {
+        toast.error("Error", "Could not save theme changes.");
+      }
+    }, 350);
   }
 
   // 7. Update SEO

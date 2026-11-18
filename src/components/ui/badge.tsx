@@ -62,7 +62,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center font-semibold tracking-tight transition-colors select-none",
+        "inline-flex items-center justify-center font-semibold tracking-tight whitespace-nowrap transition-colors select-none [&_svg]:shrink-0",
         size === "sm" ? "px-2.5 py-0.5 text-xs rounded-full gap-1.5" : "px-3 py-1 text-xs rounded-full gap-2",
         VARIANT_CLASSES[variant],
         className
@@ -75,7 +75,7 @@ export function Badge({
           aria-hidden="true"
         />
       )}
-      <span>{children}</span>
+      {children}
     </span>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, Loader2, Palette, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { THEME_PRESETS } from "@/services/store.service";
@@ -10,12 +9,13 @@ import type { ProfileTheme } from "@/types";
 
 interface ThemeCustomizerProps {
   currentTheme: ProfileTheme;
-  onUpdateTheme: (theme: Partial<ProfileTheme>) => Promise<void>;
+  onUpdateTheme: (theme: Partial<ProfileTheme>) => Promise<void> | void;
 }
+
+const HEX_COLOR_REGEX = /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/;
 
 export function ThemeCustomizer({ currentTheme, onUpdateTheme }: ThemeCustomizerProps) {
   const [theme, setTheme] = useState<ProfileTheme>(currentTheme);
-  const [isSaving, setIsSaving] = useState(false);
 
   function handleSelectPreset(presetId: string) {
     const found = THEME_PRESETS.find((p) => p.id === presetId);
@@ -32,15 +32,6 @@ export function ThemeCustomizer({ currentTheme, onUpdateTheme }: ThemeCustomizer
 
     setTheme(updated);
     onUpdateTheme(updated);
-  }
-
-  async function handleSaveCustom() {
-    setIsSaving(true);
-    try {
-      await onUpdateTheme(theme);
-    } finally {
-      setIsSaving(false);
-    }
   }
 
   return (
@@ -123,8 +114,12 @@ export function ThemeCustomizer({ currentTheme, onUpdateTheme }: ThemeCustomizer
               <Input
                 value={theme.primaryColor || "#6D28D9"}
                 onChange={(e) => {
-                  const updated = { ...theme, primaryColor: e.target.value, preset: "custom" };
+                  const val = e.target.value;
+                  const updated = { ...theme, primaryColor: val, preset: "custom" };
                   setTheme(updated);
+                  if (HEX_COLOR_REGEX.test(val)) {
+                    onUpdateTheme(updated);
+                  }
                 }}
                 className="font-mono text-xs uppercase"
               />
@@ -149,8 +144,12 @@ export function ThemeCustomizer({ currentTheme, onUpdateTheme }: ThemeCustomizer
               <Input
                 value={theme.backgroundColor || "#FAFAFB"}
                 onChange={(e) => {
-                  const updated = { ...theme, backgroundColor: e.target.value, preset: "custom" };
+                  const val = e.target.value;
+                  const updated = { ...theme, backgroundColor: val, preset: "custom" };
                   setTheme(updated);
+                  if (HEX_COLOR_REGEX.test(val)) {
+                    onUpdateTheme(updated);
+                  }
                 }}
                 className="font-mono text-xs uppercase"
               />
